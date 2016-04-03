@@ -17,6 +17,6 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
-set(SOURCE_FILES main.cpp Painter/Painter.h Painter/CairoPainter.h)
+set(SOURCE_FILES main.cpp Painter/Painter.h Painter/CairoPainter.h Painter/CairoPainter.cpp)
 add_executable(RayTracer ${SOURCE_FILES})
 target_link_libraries(RayTracer ${PAINTER_LIBS})
