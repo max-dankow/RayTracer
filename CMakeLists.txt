@@ -15,7 +15,7 @@ if(${PAINTER_NAME} STREQUAL "CAIRO")
     set(PAINTER_LIBS ${CAIRO_LIBRARIES} ${GTK3_LIBRARIES})
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -pthread")
 
 set(SOURCE_FILES main.cpp Painter/Painter.h Painter/CairoPainter.h Painter/CairoPainter.cpp)
 add_executable(RayTracer ${SOURCE_FILES})

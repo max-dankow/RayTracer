@@ -10,12 +10,13 @@ class CairoPainter : public Painter {
 public:
     CairoPainter(unsigned int screenWidth, unsigned int screenHeight, const std::string &windowTitle);
 
-    void show();
+    virtual void showPicture(const Picture &picture);
 
 private:
+    std::string windowTitle;
     GtkWidget *window;
     GtkWidget *darea;
-    static gboolean onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer user_data);
+    static void onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer user_data);
     static void putPoint(const ScreenPoint &point, cairo_t *cr);
 };
 
