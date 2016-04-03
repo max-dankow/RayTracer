@@ -39,7 +39,7 @@ void CairoPainter::showPicture(const Picture &picture) {
 
 // Рисует пиксель - ScreenPoint (с указанными координатами с указанным цветом).
 void CairoPainter::putPoint(const ScreenPoint &point, cairo_t *cr) {
-    cairo_set_source_rgb(cr, (double) point.color.r, (double)point.color.g, (double)point.color.b);
+    cairo_set_source_rgb(cr, point.color.r, point.color.g, point.color.b);
     cairo_rectangle(cr, point.x, point.y, 1.0, 1.0);
     cairo_fill(cr);
     cairo_stroke(cr);

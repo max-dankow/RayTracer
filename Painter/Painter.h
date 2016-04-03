@@ -5,9 +5,11 @@
 #include <assert.h>
 
 struct Color {
-    Color(unsigned char r = 0, unsigned char g = 0, unsigned char b = 0) : r(r), g(g), b(b) { }
+    Color(double r = 0, double g = 0, double b = 0) : r(r), g(g), b(b) {
+        assert(r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1);
+    }
 
-    unsigned char r, g, b;
+    double r, g, b;
 };
 
 class Picture {
