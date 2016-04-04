@@ -6,18 +6,20 @@
 class Triangle3d : public Object3d {
 public:
 
-    Triangle3d(const Point &a, const Point &b, const Point &c);
+    Triangle3d(const Point &a, const Point &b, const Point &c, const Color &color);
 
     virtual Vector3d getNormal(Point point);
 
     virtual bool intersectRay(const Ray &ray, Point &intersection);
 
+    virtual Color getColor(const Point &point);
 
 private:
     // Вершины треугольника.
     const Point a, b, c;
     // Предпосчитанный вектор нормали.
     Vector3d normal;
+    Color color;
 };
 
 

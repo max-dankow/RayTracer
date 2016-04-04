@@ -17,7 +17,7 @@ private:
     GtkWidget *window;
     GtkWidget *darea;
     static void onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer user_data);
-    static void putPoint(const ScreenPoint &point, cairo_t *cr);
+    static void putPoint(const ImagePoint &point, cairo_t *cr);
 };
 
 #endif //RAYTRACER_CAIROPAINTER_H

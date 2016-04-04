@@ -12,7 +12,7 @@ void CairoPainter::onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer user_dat
     Picture *picture = (Picture *) user_data;
     for (size_t col = 0; col < picture->getWidth(); ++col) {
         for (size_t row = 0; row < picture->getHeight(); ++row) {
-            putPoint(ScreenPoint((int) col, (int) row, picture->getAt(col, row)), cr);
+            putPoint(ImagePoint((int) col, (int) row, picture->getAt(col, row)), cr);
         }
     }
 }
@@ -37,10 +37,12 @@ void CairoPainter::showPicture(const Picture &picture) {
     gtk_main();
 }
 
-// Рисует пиксель - ScreenPoint (с указанными координатами с указанным цветом).
-void CairoPainter::putPoint(const ScreenPoint &point, cairo_t *cr) {
+// Рисует пиксель - ImagePoint (с указанными координатами с указанным цветом).
+void CairoPainter::putPoint(const ImagePoint &point, cairo_t *cr) {
+    // todo: сделать scale с размерами окна.
+    const size_t PIXEL_SIZE = 1;
     cairo_set_source_rgb(cr, point.color.r, point.color.g, point.color.b);
-    cairo_rectangle(cr, point.x, point.y, 1.0, 1.0);
+    cairo_rectangle(cr, point.x * PIXEL_SIZE, point.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
     cairo_fill(cr);
     cairo_stroke(cr);
 }
