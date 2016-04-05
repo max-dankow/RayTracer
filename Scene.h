@@ -7,6 +7,7 @@
 #include "Objects/Object3d.h"
 #include "Geometry.h"
 #include "Painter/Painter.h"
+#include "LightSource.h"
 
 using std::unique_ptr;
 
@@ -18,18 +19,20 @@ public:
           const Point &screenBottomRight,
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
-          std::list<unique_ptr<Object3d>> &&objects) :
+          std::list<unique_ptr<Object3d>> &&objects,
+          std::list<unique_ptr<LightSource>> &&lights) :
             viewPoint(viewPoint),
             screenTopLeft(screenTopLeft),
             screenBottomRight(screenBottomRight),
             pixelNumberWidth(pixelNumberWidth),
             pixelNumberHeight(pixelNumberHeight),
-            objects(std::move(objects)) { }
+            objects(std::move(objects)),
+            lights(std::move(lights)){ }
 
     Picture render();
 
 private:
-    Color castRay(const Ray &ray);
+    bool castRay(const Ray &ray, int restDepth, Point &intersection, Color &finalColor);
 
     // Точка камеры.
     Point viewPoint;
@@ -39,10 +42,13 @@ private:
     Point screenTopLeft, screenBottomRight;
 
     size_t pixelNumberWidth, pixelNumberHeight;
-    Color backgroundColor = Color(1, 1, 1);
+    Color backgroundColor = CL_WHITE;
 
     // Указатели на все объекты сцены, хранимые в куче.
     std::list<unique_ptr<Object3d> > objects;
+
+    // Указатели на все источники освещения, так же хранимые в куче.
+    std::list<unique_ptr<LightSource> > lights;
 };
 
 

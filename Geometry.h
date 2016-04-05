@@ -68,7 +68,7 @@ typedef Vector3d Point;
 class Ray {
 public:
 
-    Ray(const Vector3d &origin, const Vector3d &direction) : origin(origin), direction(direction.normalize()) { }
+    Ray(const Vector3d &origin, const Vector3d &direction) : origin(origin), direction(direction/*.normalize()*/) { }
 
 
     const Vector3d &getOrigin() const {

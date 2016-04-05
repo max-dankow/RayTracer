@@ -43,4 +43,7 @@ private:
     std::vector<Color> colorMap;
 };
 
+static const Color CL_WHITE = Color(1, 1, 1);
+static const Color CL_BLACK = Color(0, 0, 0);
+
 #endif //RAYTRACER_PICTURE_H
