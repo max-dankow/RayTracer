@@ -51,7 +51,7 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
     }
     // Испускаем луч во все источники освещения.
     if (restDepth > 0) {
-        bool isShadowed = false;
+        bool isShadowed = true;
         for (const unique_ptr<LightSource> &light : lights) {
             Ray lightRay(intersection, light->getPoint() - intersection);
             if (Vector3d::dotProduct(ray.getDirection(), lightRay.getDirection()) >= 0) {
@@ -59,8 +59,9 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
             }
             Point obstacleHitPoint;
             Color obstacleColor;
-            if (castRay(lightRay, 0, obstacleHitPoint, obstacleColor)) { // todo: выяснить где какая глубина нужна.
-                isShadowed = true;
+            if (!castRay(lightRay, 0, obstacleHitPoint, obstacleColor)) { // todo: выяснить где какая глубина нужна.
+                isShadowed = false;
+                break;
             }
         }
         if (isShadowed) {
