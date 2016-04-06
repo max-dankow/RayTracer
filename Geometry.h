@@ -91,4 +91,15 @@ private:
     Vector3d origin, direction;
 };
 
+static std::istream &operator>>(std::istream &input, Vector3d &vector) {
+    double x, y, z;
+    input >> x >> y >> z;
+    vector.x = x;
+    vector.y = y;
+    vector.z = z;
+
+
+    return input;
+}
+
 #endif //RAYTRACER_GEOMETRY_H

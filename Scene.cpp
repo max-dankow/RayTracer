@@ -49,24 +49,35 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
     if (!haveAny) {
         return false;
     }
+    /*Color hsv = rgb2hsv(finalColor);
+    hsv.v=0;
     // Испускаем луч во все источники освещения.
     if (restDepth > 0) {
         bool isShadowed = true;
         for (const unique_ptr<LightSource> &light : lights) {
-            Ray lightRay(intersection, light->getPoint() - intersection);
-            if (Vector3d::dotProduct(ray.getDirection(), lightRay.getDirection()) >= 0) {
-                continue;
-            }
+            Ray lightRay(intersection  - ray.getDirection() * 0.0001, light->getPoint() - intersection);
+//            if (Vector3d::dotProduct(ray.getDirection(), lightRay.getDirection()) >= 0) {
+//                continue;
+//            }
             Point obstacleHitPoint;
             Color obstacleColor;
             if (!castRay(lightRay, 0, obstacleHitPoint, obstacleColor)) { // todo: выяснить где какая глубина нужна.
                 isShadowed = false;
-                break;
+//                hsv.v *= 1 + 20 / ((lightRay.getDirection().length())*((lightRay.getDirection().length())));
+                hsv.v += 6. / ((lightRay.getDirection().length())*((lightRay.getDirection().length())));
+//                finalColor = finalColor *(15 / ((lightRay.getDirection().length())*((lightRay.getDirection().length()))));
             }
         }
         if (isShadowed) {
             finalColor = CL_BLACK;
         }
     }
+    finalColor = hsv2rgb(hsv);*/
     return true;
 }
+
+void Scene::emplaceObject(Object3d *object) {
+    objects.emplace_back(object);
+}
+
+

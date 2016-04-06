@@ -31,6 +31,8 @@ public:
 
     Picture render();
 
+    void emplaceObject(Object3d *object);
+
 private:
     bool castRay(const Ray &ray, int restDepth, Point &intersection, Color &finalColor);
 
@@ -42,7 +44,7 @@ private:
     Point screenTopLeft, screenBottomRight;
 
     size_t pixelNumberWidth, pixelNumberHeight;
-    Color backgroundColor = CL_WHITE;
+    Color backgroundColor = CL_BLACK;
 
     // Указатели на все объекты сцены, хранимые в куче.
     std::list<unique_ptr<Object3d> > objects;

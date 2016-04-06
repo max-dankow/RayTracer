@@ -17,7 +17,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -pthread")
 
-set(SOURCE_FILES main.cpp Painter/Painter.h Painter/CairoPainter.h Painter/CairoPainter.cpp Objects/Object3d.h Scene.cpp Scene.h Objects/Triangle3d.cpp Objects/Triangle3d.h Geometry.h Picture.h LightSource.cpp LightSource.h)
+set(SOURCE_FILES main.cpp Painter/Painter.h Painter/CairoPainter.h Painter/CairoPainter.cpp Objects/Object3d.h Scene.cpp Scene.h Objects/Triangle3d.cpp Objects/Triangle3d.h Geometry.h Picture.h LightSource.cpp LightSource.h SceneReader/TextSTLReader.cpp SceneReader/TextSTLReader.h)
 set(TEST_FILES Painter/Painter.h Painter/CairoPainter.h Painter/CairoPainter.cpp Objects/Object3d.h Scene.cpp Scene.h Objects/Triangle3d.cpp Objects/Triangle3d.h Geometry.h Tests/Tests.cpp)
 add_executable(RayTracer ${SOURCE_FILES})
 add_executable(Tests ${TEST_FILES})
