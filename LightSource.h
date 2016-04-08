@@ -8,7 +8,8 @@
 class LightSource {
 public:
 
-    LightSource(const Point &point, const Color &color = CL_WHITE) : point(point), color(color) { }
+    LightSource(const Point &point, double brightness = 1, const Color &color = CL_WHITE) :
+            point(point), brightess(brightness), color(color) { }
 
     const Point &getPoint() const {
         return point;
@@ -26,8 +27,17 @@ public:
         LightSource::color = color;
     }
 
+    double getBrightess() const {
+        return brightess;
+    }
+
+    void setBrightess(double brightess) {
+        LightSource::brightess = brightess;
+    }
+
 private:
     Point point;
+    double brightess;
     Color color;
 };
 

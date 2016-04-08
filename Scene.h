@@ -41,6 +41,7 @@ private:
 
     // Верхний левый и правый нижний угол экрана.
     // Считаем что стороны экрана параллельны осям.
+    // todo: нормальный формат камеры
     Point screenTopLeft, screenBottomRight;
 
     size_t pixelNumberWidth, pixelNumberHeight;
