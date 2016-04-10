@@ -32,15 +32,24 @@ public:
         return Vector3d(this->x * k, this->y * k, this->z * k);
     }
 
+    Vector3d operator/(double k) const {
+        return Vector3d(this->x / k, this->y / k, this->z / k);
+    }
+
     double length() const {
         return sqrt(x * x + y * y + z * z);
     }
 
-    Vector3d normalize() const {
-        return *this * (1 / this->length());
+    double lengthSquared() const {
+        return x * x + y * y + z * z;
     }
 
-    static double dotProduct(const Vector3d &a, const Vector3d &b) {
+    Vector3d normalize() const {
+        return *this / this->length();
+    }
+
+    // Скалярное произведение.
+    inline static double dotProduct(const Vector3d &a, const Vector3d &b) {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 
@@ -50,9 +59,9 @@ public:
     }
 
     bool operator==(const Vector3d &other) const {
-        return (fabs(this->x - other.x) < PRECISION
-                && fabs(this->y - other.y) < PRECISION
-                && fabs(this->z - other.z) < PRECISION);
+        return (areDoubleEqual(this->x, other.x)
+                && areDoubleEqual(this->y, other.y)
+                && areDoubleEqual(this->z, other.z));
     }
 
     bool operator!=(const Vector3d &other) const {
@@ -62,43 +71,30 @@ public:
     double x, y, z;
 };
 
+// typedef для разделения сущностей точки и вектора, хотя по сути это одно и то же.
 typedef Vector3d Point;
 
 // Представляет луч, исходящий из точки origin по единичному вектору направления direction.
 class Ray {
 public:
 
-    Ray(const Vector3d &origin, const Vector3d &direction) : origin(origin), direction(direction/*.normalize()*/) { }
+    Ray(const Point &origin, const Vector3d &direction) : origin(origin), direction(direction.normalize()) { }
 
-
-    const Vector3d &getOrigin() const {
+    const Point &getOrigin() const {
         return origin;
-    }
-
-    void setOrigin(const Vector3d &origin) {
-        Ray::origin = origin;
     }
 
     const Vector3d &getDirection() const {
         return direction;
     }
 
-    void setDirection(const Vector3d &direction) {
-        Ray::direction = direction;
-    }
-
 private:
-    Vector3d origin, direction;
+    Point origin;
+    Vector3d direction;
 };
 
 static std::istream &operator>>(std::istream &input, Vector3d &vector) {
-    double x, y, z;
-    input >> x >> y >> z;
-    vector.x = x;
-    vector.y = y;
-    vector.z = z;
-
-
+    input >> vector.x >> vector.y >> vector.z;
     return input;
 }
 

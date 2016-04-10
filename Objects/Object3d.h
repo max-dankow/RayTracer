@@ -4,11 +4,12 @@
 #include "../Geometry.h"
 #include "../Picture.h"
 
+// Интерфейс представляет обобщенный объект сцены.
 class Object3d {
 public:
-    virtual Vector3d getNormal(Point) = 0;
-    virtual bool intersectRay(const Ray &, Point &intersection) = 0;
-    virtual Color getColor(const Point &point) = 0;
+    virtual Vector3d getNormal(const Point &) const = 0;
+    virtual bool intersectRay(const Ray &, Point &intersection) const = 0;
+    virtual Color getColor(const Point &point) const = 0;
 };
 
 

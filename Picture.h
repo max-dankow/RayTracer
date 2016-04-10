@@ -6,6 +6,7 @@
 #include <vector>
 #include <limits>
 
+// todo: инкаплусировать всю работу с цветами в классе
 // Представляет цвет в формате RGB каждая компонента - насыщенность от 0 до 1.
 struct Color {
     Color(double r = 0, double g = 0, double b = 0) : r(r), g(g), b(b) {
@@ -49,6 +50,8 @@ private:
     std::vector<Color> colorMap;
 };
 
+// todo: исправить на hsl
+// todo: переписать нормально
 static const Color CL_WHITE = Color(1, 1, 1);
 static const Color CL_BLACK = Color(0, 0, 0);
 /*

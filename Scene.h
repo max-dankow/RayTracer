@@ -19,8 +19,8 @@ public:
           const Point &screenBottomRight,
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
-          std::list<unique_ptr<Object3d>> &&objects,
-          std::list<unique_ptr<LightSource>> &&lights) :
+          std::vector<unique_ptr<Object3d>> &&objects,
+          std::vector<unique_ptr<LightSource>> &&lights) :
             viewPoint(viewPoint),
             screenTopLeft(screenTopLeft),
             screenBottomRight(screenBottomRight),
@@ -48,10 +48,10 @@ private:
     Color backgroundColor = CL_BLACK;
 
     // Указатели на все объекты сцены, хранимые в куче.
-    std::list<unique_ptr<Object3d> > objects;
+    std::vector<unique_ptr<Object3d> > objects;
 
     // Указатели на все источники освещения, так же хранимые в куче.
-    std::list<unique_ptr<LightSource> > lights;
+    std::vector<unique_ptr<LightSource> > lights;
 };
 
 

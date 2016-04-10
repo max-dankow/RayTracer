@@ -1,43 +1,31 @@
 #ifndef RAYTRACER_LIGHTSOURCE_H
 #define RAYTRACER_LIGHTSOURCE_H
 
-
 #include "Picture.h"
 #include "Geometry.h"
 
+// Представляет источник освещения, расположенный в точке point и яркостью brightness.
 class LightSource {
 public:
 
     LightSource(const Point &point, double brightness = 1, const Color &color = CL_WHITE) :
-            point(point), brightess(brightness), color(color) { }
+            point(point), brightness(brightness), color(color) { }
 
     const Point &getPoint() const {
         return point;
-    }
-
-    void setPoint(const Point &point) {
-        LightSource::point = point;
     }
 
     const Color &getColor() const {
         return color;
     }
 
-    void setColor(const Color &color) {
-        LightSource::color = color;
-    }
-
-    double getBrightess() const {
-        return brightess;
-    }
-
-    void setBrightess(double brightess) {
-        LightSource::brightess = brightess;
+    double getBrightness() const {
+        return brightness;
     }
 
 private:
     Point point;
-    double brightess;
+    double brightness;
     Color color;
 };
 
