@@ -23,12 +23,13 @@ Picture Scene::render() {
         }
         // Отображение прогресса.
         if (col == pixelNumberWidth - 1 || col % 10 == 0) {
-            std::cout << "Rendering " << 100 * col / pixelNumberWidth << "%\n";
+            std::cout << '\r' << "Rendering " << 100 * col / pixelNumberWidth << "%";
+            std::cout.flush();
         }
     }
     auto endTime = std::chrono::steady_clock::now();
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
-    std::cout << "Rendering finished\n"
+    std::cout << "\nRendering finished\n"
         << "Total time " << workTime.count() / 60 << "m "
         << workTime.count() % 60 << "s\n";
     return picture;
