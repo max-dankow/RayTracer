@@ -2,6 +2,7 @@
 #define RAYTRACER_GEOMETRY_H
 
 #include <cmath>
+#include <vector>
 #include <iostream>
 
 static const double PRECISION = 1e-6;
@@ -97,5 +98,44 @@ static std::istream &operator>>(std::istream &input, Vector3d &vector) {
     input >> vector.x >> vector.y >> vector.z;
     return input;
 }
+
+struct BoundingBox {
+
+    BoundingBox() { }
+
+    BoundingBox(const Point &minCorner, const Point &maxCorner) : minCorner(minCorner), maxCorner(maxCorner) { }
+
+    void extend(const BoundingBox &otherBox) {
+        minCorner = getMinPoint(minCorner, otherBox.minCorner);
+        maxCorner = getMaxPoint(maxCorner, otherBox.maxCorner);
+    }
+
+    Point minCorner, maxCorner;
+
+    BoundingBox(const std::vector<Point> points) {
+        if (points.empty()) {
+            return;
+        }
+        minCorner = points.front();
+        maxCorner = points.front();
+        for (Point point : points) {
+            minCorner = getMinPoint(minCorner, point);
+            maxCorner = getMaxPoint(maxCorner, point);
+        }
+    }
+
+private:
+    Point getMinPoint(const Point &first, const Point &second) {
+        return Point(std::min(first.x, second.x),
+                     std::min(first.y, second.y),
+                     std::min(first.z, second.z));
+    }
+
+    Point getMaxPoint(const Point &first, const Point &second) {
+        return Point(std::max(first.x, second.x),
+                     std::max(first.y, second.y),
+                     std::max(first.z, second.z));
+    }
+};
 
 #endif //RAYTRACER_GEOMETRY_H

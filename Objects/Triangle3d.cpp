@@ -46,3 +46,8 @@ bool Triangle3d::intersectRay(const Ray &ray, Point &intersection) const {
 Color Triangle3d::getColor(const Point &point) const {
     return color;
 }
+
+BoundingBox Triangle3d::getBoundingBox() const {
+
+    return BoundingBox({a, b, c});
+}
