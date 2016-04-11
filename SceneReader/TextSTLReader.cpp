@@ -38,7 +38,7 @@ std::vector<std::unique_ptr<Object3d>> TextSTLReader::readObjects(std::string pa
 
         if (word == "endsolid") {
             input.close();
-            std::cout << "Read success: " << objects.size() << " vertices" << std::endl;
+            std::cout << "Read success: " << objects.size() << " primitives" << std::endl;
             return objects;
         }
     }

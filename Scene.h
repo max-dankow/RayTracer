@@ -46,6 +46,7 @@ private:
 
     size_t pixelNumberWidth, pixelNumberHeight;
     Color backgroundColor = CL_BLACK;
+    double backgroundIllumination = 0.1;
 
     // Указатели на все объекты сцены, хранимые в куче.
     std::vector<unique_ptr<Object3d> > objects;

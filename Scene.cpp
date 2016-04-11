@@ -62,7 +62,7 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
     }
     // Расчет освещенности.
     Color hsv = rgb2hsv(finalColor);
-    double totalBrightness = 0;
+    double totalBrightness = backgroundIllumination;
     for (const unique_ptr<LightSource> &light : lights) {
         Vector3d intersectionToLight = light->getPoint() - intersection;
         Ray lightRay(intersection, intersectionToLight);

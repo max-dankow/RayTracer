@@ -48,6 +48,15 @@ Color Triangle3d::getColor(const Point &point) const {
 }
 
 BoundingBox Triangle3d::getBoundingBox() const {
-
     return BoundingBox({a, b, c});
+}
+
+bool Triangle3d::isIntersectBox(const BoundingBox &box) const {
+    // Если хотя бы одна точка лежит между minCorner и maxCorner, то треугольник пересекает box.
+    return  ((a.totallyLessEqualThan(box.maxCorner)
+              && box.minCorner.totallyLessEqualThan(a))
+             || (b.totallyLessEqualThan(box.maxCorner)
+                 && box.minCorner.totallyLessEqualThan(b))
+             ||(c.totallyLessEqualThan(box.maxCorner)
+                && box.minCorner.totallyLessEqualThan(c)));
 }

@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <vector>
+#include <assert.h>
 #include <iostream>
 
 static const double PRECISION = 1e-6;
@@ -10,6 +11,12 @@ static const double PRECISION = 1e-6;
 static bool areDoubleEqual(const double a, const double b) {
     return (fabs(a - b) < PRECISION);
 }
+
+enum Axis {
+    AXIS_X = 0,
+    AXIS_Y = 1,
+    AXIS_Z = 2
+};
 
 class Vector3d {
 public:
@@ -19,6 +26,19 @@ public:
 
     Vector3d(const Vector3d &from, const Vector3d &to) {
         *this = to - from;
+    }
+
+    double &operator[](Axis axis) {
+        switch (axis) {
+            case AXIS_X:
+                return x;
+            case AXIS_Y:
+                return y;
+            case AXIS_Z:
+                return z;
+            default:
+                assert(false);
+        }
     }
 
     Vector3d operator+(Vector3d other) const {
@@ -69,11 +89,25 @@ public:
         return !(*this == other);
     }
 
+    bool totallyLessEqualThan(const Vector3d &other) const {
+        return (this->x <= other.x && this->y <= other.y && this->z <= other.z);
+    }
+
     double x, y, z;
 };
 
 // typedef для разделения сущностей точки и вектора, хотя по сути это одно и то же.
 typedef Vector3d Point;
+
+static std::istream &operator>>(std::istream &input, Vector3d &vector) {
+    input >> vector.x >> vector.y >> vector.z;
+    return input;
+}
+
+static std::ostream &operator<<(std::ostream &output, Vector3d &vector) {
+    output << vector.x << ' ' << vector.y << ' ' << vector.z;
+    return output;
+}
 
 // Представляет луч, исходящий из точки origin по единичному вектору направления direction.
 class Ray {
@@ -94,11 +128,6 @@ private:
     Vector3d direction;
 };
 
-static std::istream &operator>>(std::istream &input, Vector3d &vector) {
-    input >> vector.x >> vector.y >> vector.z;
-    return input;
-}
-
 struct BoundingBox {
 
     BoundingBox() { }
@@ -112,7 +141,7 @@ struct BoundingBox {
 
     Point minCorner, maxCorner;
 
-    BoundingBox(const std::vector<Point> points) {
+    BoundingBox(const std::vector<Point> &points) {
         if (points.empty()) {
             return;
         }
@@ -123,6 +152,15 @@ struct BoundingBox {
             maxCorner = getMaxPoint(maxCorner, point);
         }
     }
+
+    double surfaceArea() const {
+        double area = 0;
+        area += fabs((maxCorner.x - minCorner.x) * (maxCorner.y - minCorner.y));
+        area += fabs((maxCorner.y - minCorner.y) * (maxCorner.z - minCorner.z));
+        area += fabs((maxCorner.z - minCorner.z) * (maxCorner.x - minCorner.x));
+        return area * 2;
+    }
+
 
 private:
     Point getMinPoint(const Point &first, const Point &second) {
