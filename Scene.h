@@ -19,8 +19,8 @@ public:
           const Point &screenBottomRight,
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
-          std::vector<unique_ptr<Object3d>> &&objects,
-          std::vector<unique_ptr<LightSource>> &&lights) :
+          std::vector<Object3d*> &&objects,
+          std::vector<LightSource*> &&lights) :
             viewPoint(viewPoint),
             screenTopLeft(screenTopLeft),
             screenBottomRight(screenBottomRight),
@@ -49,10 +49,10 @@ private:
     double backgroundIllumination = 0.1;
 
     // Указатели на все объекты сцены, хранимые в куче.
-    std::vector<unique_ptr<Object3d> > objects;
+    std::vector<Object3d*> objects;
 
     // Указатели на все источники освещения, так же хранимые в куче.
-    std::vector<unique_ptr<LightSource> > lights;
+    std::vector<LightSource*> lights;
 };
 
 

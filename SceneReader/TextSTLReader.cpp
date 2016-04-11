@@ -3,8 +3,8 @@
 #include "TextSTLReader.h"
 #include "../Objects/Triangle3d.h"
 
-std::vector<std::unique_ptr<Object3d>> TextSTLReader::readObjects(std::string path) {
-    std::vector<std::unique_ptr<Object3d>> objects;
+std::vector<Object3d*> TextSTLReader::readObjects(std::string path) {
+    std::vector<Object3d*> objects;
     std::ifstream input(path); // todo: decide what to do with exceptions.
     if (!input.is_open()) {
         throw std::invalid_argument("File not found");

@@ -38,7 +38,7 @@ Picture Scene::render() {
 bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &finalColor) {
     assert(restDepth >= 0); // todo: assert замедляет.
     double minSqrDistance = 0;  // Квадрат (для оптимизации) минимального расстояния до пересечения
-    std::vector<unique_ptr<Object3d>>::const_iterator obstacle;  // Итератор соотвествующий объекту пересечения
+    Object3d* obstacle = nullptr;  // Итератор соотвествующий объекту пересечения
     bool haveAny = false;
     // Перебираем все объекты сцены (пока в лоб), ищем ближайшее пересечение.
     for (auto iter = objects.begin(); iter != objects.end(); ++iter) {
@@ -50,7 +50,7 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
                 minSqrDistance = sqrDistance;
                 intersection = thisIntersection;
                 finalColor = (*iter)->getColor(thisIntersection);
-                obstacle = iter;
+                obstacle = *iter;
             }
         }
     }
@@ -63,11 +63,11 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
     // Расчет освещенности.
     Color hsv = rgb2hsv(finalColor);
     double totalBrightness = backgroundIllumination;
-    for (const unique_ptr<LightSource> &light : lights) {
+    for (const LightSource* light : lights) {
         Vector3d intersectionToLight = light->getPoint() - intersection;
         Ray lightRay(intersection, intersectionToLight);
         double sqrDistanceToLight = intersectionToLight.lengthSquared();
-        double dotProduct = Vector3d::dotProduct((*obstacle)->getNormal(intersection), lightRay.getDirection());
+        double dotProduct = Vector3d::dotProduct(obstacle->getNormal(intersection), lightRay.getDirection());
         // Отсекаем источники, находящиеся не перед поверхностью.
         if (dotProduct <= 0 || areDoubleEqual(sqrDistanceToLight, 0)) {
             continue;

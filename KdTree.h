@@ -11,7 +11,7 @@ public:
     KdNode() { }
 
     KdNode(const BoundingBox &box, KdNode* parent,
-           std::vector<std::unique_ptr<Object3d>> &&objects) :
+           std::vector<Object3d*> &&objects) :
             box(box), parent(parent), objects(std::move(objects)) { }
 
     const BoundingBox &getBox() const {
@@ -54,11 +54,11 @@ public:
         rightSubTree.reset(node);
     }
 
-    std::vector<std::unique_ptr<Object3d>> &getObjects() { // todo : наличие такого прямого доступа подозрительно
+    std::vector<Object3d*> &getObjects() { // todo : наличие такого прямого доступа подозрительно
         return objects;
     }
 
-    void setObjects(std::vector<std::unique_ptr<Object3d>> &&objects) {
+    void setObjects(std::vector<Object3d*> &&objects) {
         KdNode::objects = std::move(objects);
     }
 
@@ -83,13 +83,13 @@ private:
     std::unique_ptr<KdNode> leftSubTree, rightSubTree;
     KdNode* parent;  // Ресурсом владет другой указатель
     // Если не лист, то хранит список объектов принадлежащий обоим поддеревьям.
-    std::vector<std::unique_ptr<Object3d> > objects;
+    std::vector<Object3d*> objects;
 };
 
 
 class KdTree {
 public:
-    KdTree(std::vector<std::unique_ptr<Object3d> > &&objects);
+    KdTree(std::vector<Object3d*> &&objects);
 
     KdTree(const KdTree &) = delete;
 
@@ -103,9 +103,9 @@ private:
     void split(std::unique_ptr<KdNode> &node, size_t depth);
 
     double surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
-                                    const std::vector<std::unique_ptr<Object3d> > &objects);
+                                    const std::vector<Object3d*> &objects);
 
-    unsigned long calculateNumberOfPrimitivesInBox(const std::vector<std::unique_ptr<Object3d> > &objects,
+    unsigned long calculateNumberOfPrimitivesInBox(const std::vector<Object3d*> &objects,
                                                    const BoundingBox &box);
 
 };

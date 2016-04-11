@@ -1,7 +1,7 @@
 #include <chrono>
 #include "KdTree.h"
 
-KdTree::KdTree(std::vector<std::unique_ptr<Object3d> > &&objects) {
+KdTree::KdTree(std::vector<Object3d*> &&objects) {
     std::cout << "Start building Kd-tree..." << std::endl;
     auto startTime = std::chrono::steady_clock::now();
 
@@ -11,7 +11,7 @@ KdTree::KdTree(std::vector<std::unique_ptr<Object3d> > &&objects) {
     }
     // Вычисляем всеобъемлющий box
     BoundingBox box(objects.front()->getBoundingBox());
-    for (const std::unique_ptr<Object3d> &object : objects) {
+    for (const Object3d* object : objects) {
         box.extend(object->getBoundingBox());
     }
 
@@ -66,15 +66,15 @@ void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
 
     auto leftBox = node->getBox();
     leftBox.maxCorner[splitAxisMin] = splitPointMin;
-    std::vector<std::unique_ptr<Object3d> > leftObjects;
+    std::vector<Object3d*> leftObjects;
 
     // Распределяем объекты по поддеревьям.
     auto rightBox = node->getBox();
     rightBox.minCorner[splitAxisMin] = splitPointMin;
-    std::vector<std::unique_ptr<Object3d> > rightObjects;
+    std::vector<Object3d*> rightObjects;
 
     // Объекты пересекающие оба box'a будут храниться у родителя.
-    std::vector<std::unique_ptr<Object3d> > parentObjects;
+    std::vector<Object3d*> parentObjects;
 
     for (auto iter = node->getObjects().begin(); iter < node->getObjects().end(); ++iter) {
         bool belongsToLeft = (*iter)->isIntersectBox(leftBox);
@@ -100,7 +100,7 @@ void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
 }
 
 double KdTree::surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
-                                    const std::vector<std::unique_ptr<Object3d> > &objects) {
+                                    const std::vector<Object3d*> &objects) {
     auto leftBox = box;
     leftBox.maxCorner[splitAxis] = splitPoint;
     unsigned long leftObjectNumber = calculateNumberOfPrimitivesInBox(objects, leftBox);
@@ -112,10 +112,10 @@ double KdTree::surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const Bou
     return COST_EMPTY + leftObjectNumber * leftBox.surfaceArea() + rightObjectNumber * rightBox.surfaceArea();
 }
 
-unsigned long KdTree::calculateNumberOfPrimitivesInBox(const std::vector<std::unique_ptr<Object3d> > &objects,
+unsigned long KdTree::calculateNumberOfPrimitivesInBox(const std::vector<Object3d*> &objects,
                                                        const BoundingBox &box) {
     unsigned long count = 0;
-    for (const std::unique_ptr<Object3d> &object : objects) {
+    for (const Object3d* object : objects) {
         if (object->isIntersectBox(box)) {
             count++;
         }

@@ -6,7 +6,7 @@
 // Считывает STL ASCII формат. В первую очередь предназначен для удобства человеку.
 class TextSTLReader {
 public:
-    std::vector<std::unique_ptr<Object3d>> readObjects(std::string path);
+    std::vector<Object3d*> readObjects(std::string path);
 };
 
 #endif //RAYTRACER_TESTSTLREADER_H
