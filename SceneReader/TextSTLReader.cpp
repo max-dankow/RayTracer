@@ -3,7 +3,7 @@
 #include "TextSTLReader.h"
 #include "../Objects/Triangle3d.h"
 
-std::vector<Object3d*> TextSTLReader::readObjects(std::string path) {
+std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {
     std::vector<Object3d*> objects;
     std::ifstream input(path); // todo: decide what to do with exceptions.
     if (!input.is_open()) {
@@ -29,7 +29,7 @@ std::vector<Object3d*> TextSTLReader::readObjects(std::string path) {
             input >> word >> b;
             input >> word >> c;
 
-            objects.emplace_back(new Triangle3d(a, b, c, CL_WHITE));
+            objects.push_back(new Triangle3d(a, b, c, CL_WHITE));
             // endloop
             input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             // endfacet

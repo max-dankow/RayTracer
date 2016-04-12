@@ -1,7 +1,8 @@
 #include <chrono>
+#include <vector>
 #include "KdTree.h"
 
-KdTree::KdTree(std::vector<Object3d*> &&objects) {
+KdTree::KdTree(const std::vector<Object3d*> &objects) {
     std::cout << "Start building Kd-tree..." << std::endl;
     auto startTime = std::chrono::steady_clock::now();
 
@@ -18,18 +19,24 @@ KdTree::KdTree(std::vector<Object3d*> &&objects) {
     std::cout << "Root bounding box:\n"
         << box.minCorner << '\n' << box.maxCorner << '\n';
 
-    root.reset(new KdNode(box, nullptr, std::move(objects)));
+    root.reset(new KdNode(box, nullptr, objects));
+    nodeNumber = 1;
     split(root, 0);
 
     auto endTime = std::chrono::steady_clock::now();
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
-    std::cout << "Kd-tree has been built" << std::endl
+    std::cout << "Kd-tree has been built: "
+        << nodeNumber << " nodes" << std::endl
         << "Total time " << workTime.count() / 60 << "m "
         << workTime.count() % 60 << "s" << std::endl;
 }
 
 void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
     auto surroundBox = node->getBox();
+//    std::cout << "Now splitting the box:\n"
+//        << surroundBox.minCorner << "->"
+//        << surroundBox.maxCorner << '\n';
+
     // Выбрать плоскость разбиения, которая делит данный узел на два дочерних.
     // Для каждой оси и для каждого пробного положения высчитать эвристику площади и найти минимум.
     double splitPointMin = node->getBox().minCorner.x;
@@ -38,23 +45,54 @@ void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
     for (int axisIter = 0; axisIter < 3; ++axisIter) {
         Axis axis = static_cast<Axis> (axisIter);
         // Фиксированное число пробных значений - regular grid.
-        for (size_t i = 0; i < REGULAR_GRID_COUNT; ++i) {
-            double splitPoint = surroundBox.minCorner[axis]
-                    + i * (surroundBox.maxCorner[axis] - surroundBox.minCorner[axis]) / REGULAR_GRID_COUNT;
-            double heuristics = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
-//            std::cout << splitPoint << " sah = " << heuristics << '\n';
-            if (heuristics < heuristicsMin) {
-                heuristicsMin = heuristics;
-                splitAxisMin = axis;
-                splitPointMin = splitPoint;
+//        for (size_t i = 0; i < REGULAR_GRID_COUNT; ++i) {
+//            double splitPoint = surroundBox.minCorner[axis]
+//                    + i * (surroundBox.maxCorner[axis] - surroundBox.minCorner[axis]) / REGULAR_GRID_COUNT;
+        double splitPointFrom = surroundBox.minCorner[axis];
+        double splitPointTo = surroundBox.maxCorner[axis];
+        for (Object3d *pObject : node->getObjects()) {
+            BoundingBox objectBox = pObject->getBoundingBox();
+            double heuristics = heuristicsMin;
+
+            double splitPoint = objectBox.minCorner[axis] - PRECISION * 10;
+            if (splitPoint >= splitPointFrom && splitPoint <= splitPointTo) {
+                heuristics = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
+
+                if (heuristics < heuristicsMin) {
+                    heuristicsMin = heuristics;
+                    splitAxisMin = axis;
+                    splitPointMin = splitPoint;
+                }
+//                std::cout << axis << " minPoint " << splitPoint
+//                << "(from " << splitPointFrom << " to " << splitPointTo << ") = "
+//                << heuristics << '\n';
             }
+            splitPoint = objectBox.maxCorner[axis] + PRECISION * 10;
+
+            if (splitPoint >= splitPointFrom && splitPoint <= splitPointTo) {
+                heuristics = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
+
+//                std::cout << axis << " maxPoint " << "local " << splitPoint
+//                << "(from " << splitPointFrom << " to " << splitPointTo << ") = "
+//                << heuristics << '\n';
+                if (heuristics < heuristicsMin) {
+                    heuristicsMin = heuristics;
+                    splitAxisMin = axis;
+                    splitPointMin = splitPoint;
+                }// todo: избавиться от копипасты
+            }
+
         }
     }
-    std::cout << splitAxisMin << ' ' << splitPointMin << '\n';
+//    std::cout << "Min is "<< splitAxisMin << ' ' << splitPointMin << " " << heuristicsMin << '\n';
+//    std::cout << node->getObjects().size() * surroundBox.surfaceArea() << "  = now; heu = " << heuristicsMin << '\n';
 
     // Стоимость прослеживания дочерних узлов будет не меньше
     // чем стоимость простлеживания узла целиком, то остановится.
-    if (node->getObjects().size() * surroundBox.surfaceArea() <= heuristicsMin) {
+    if (node->getObjects().size() * surroundBox.surfaceArea() <= heuristicsMin
+        || depth > MAX_DEPTH
+        || node->getObjects().size() <= MIN_OBJECTS_PER_LIST) {
+//        std::cout << "terminating\n";
         node->setIsLeaf(true);
         node->resetLeftPointer(nullptr);
         node->resetRightPointer(nullptr);
@@ -73,28 +111,19 @@ void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
     rightBox.minCorner[splitAxisMin] = splitPointMin;
     std::vector<Object3d*> rightObjects;
 
-    // Объекты пересекающие оба box'a будут храниться у родителя.
-    std::vector<Object3d*> parentObjects;
-
-    for (auto iter = node->getObjects().begin(); iter < node->getObjects().end(); ++iter) {
-        bool belongsToLeft = (*iter)->isIntersectBox(leftBox);
-        bool belongsToRight = (*iter)->isIntersectBox(rightBox);
-        if (belongsToLeft && belongsToRight) {
-            parentObjects.push_back(std::move(*iter));
-            continue;
+    for (Object3d* pObject : node->getObjects()) {
+        if (pObject->isIntersectBox(leftBox)) {
+            leftObjects.push_back(pObject);
         }
-        if (belongsToLeft) {
-            leftObjects.push_back(std::move(*iter));
-        }
-        if (belongsToRight) {
-            rightObjects.push_back(std::move(*iter));
+        if ((pObject)->isIntersectBox(rightBox)) {
+            rightObjects.push_back(pObject);
         }
     }
 
     // Добавить примитивы, пересекающиеся с боксом левого узла в левый узел, примитивы, пересекающиеся с боксом правого узла в правый.
-    node->resetLeftPointer(new KdNode(leftBox, node.get(), std::move(leftObjects)));
-    node->resetRightPointer(new KdNode(rightBox, node.get(), std::move(rightObjects)));
-    node->setObjects(std::move(parentObjects));
+    node->resetLeftPointer(new KdNode(leftBox, node.get(), leftObjects));
+    node->resetRightPointer(new KdNode(rightBox, node.get(), rightObjects));
+    nodeNumber += 2;
     split(node->getLeftSubTree(), depth + 1);
     split(node->getRightSubTree(), depth + 1);
 }

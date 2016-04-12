@@ -11,8 +11,8 @@ public:
     KdNode() { }
 
     KdNode(const BoundingBox &box, KdNode* parent,
-           std::vector<Object3d*> &&objects) :
-            box(box), parent(parent), objects(std::move(objects)) { }
+           const std::vector<Object3d*> &objects) :
+            box(box), parent(parent), objects(objects) { }
 
     const BoundingBox &getBox() const {
         return box;
@@ -89,7 +89,7 @@ private:
 
 class KdTree {
 public:
-    KdTree(std::vector<Object3d*> &&objects);
+    KdTree(const std::vector<Object3d*> &objects);
 
     KdTree(const KdTree &) = delete;
 
@@ -99,6 +99,7 @@ private:
     static const size_t MIN_OBJECTS_PER_LIST = 1;
     static const size_t REGULAR_GRID_COUNT = 10;
     const double COST_EMPTY = 0;
+    size_t nodeNumber;
 
     void split(std::unique_ptr<KdNode> &node, size_t depth);
 

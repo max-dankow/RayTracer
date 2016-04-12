@@ -11,6 +11,11 @@
 
 using std::unique_ptr;
 
+struct Statistics {
+    unsigned long intersectionAtemptCount;
+    unsigned long rayNumber;
+};
+
 class Scene {
 public:
 
@@ -19,14 +24,14 @@ public:
           const Point &screenBottomRight,
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
-          std::vector<Object3d*> &&objects,
+          const std::vector<Object3d*> &objects,
           std::vector<LightSource*> &&lights) :
             viewPoint(viewPoint),
             screenTopLeft(screenTopLeft),
             screenBottomRight(screenBottomRight),
             pixelNumberWidth(pixelNumberWidth),
             pixelNumberHeight(pixelNumberHeight),
-            objects(std::move(objects)),
+            objects(objects),
             lights(std::move(lights)){ }
 
     Picture render();
@@ -53,6 +58,8 @@ private:
 
     // Указатели на все источники освещения, так же хранимые в куче.
     std::vector<LightSource*> lights;
+
+    Statistics stats;
 };
 
 

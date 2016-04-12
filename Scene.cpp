@@ -10,6 +10,8 @@ Picture Scene::render() {
     auto startTime = std::chrono::steady_clock::now();
 
     std::cout << "Start rendering scene...\n";
+    stats.intersectionAtemptCount = 0;
+    stats.rayNumber = 0;
     for (size_t col = 0; col < pixelNumberWidth; ++col) {
         for (size_t row = 0; row < pixelNumberHeight; ++row) {
             // Смещаем 0.5 чтобы попасть в серединку пикселя.
@@ -31,17 +33,21 @@ Picture Scene::render() {
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
     std::cout << "\nRendering finished\n"
         << "Total time " << workTime.count() / 60 << "m "
-        << workTime.count() % 60 << "s\n";
+        << workTime.count() % 60 << "s\n"
+        << "Statistics:\n"
+        << "\tAttempts per ray " << double (stats.intersectionAtemptCount) / stats.rayNumber << '\n';
     return picture;
 }
 
 bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &finalColor) {
     assert(restDepth >= 0); // todo: assert замедляет.
+    stats.rayNumber++;
     double minSqrDistance = 0;  // Квадрат (для оптимизации) минимального расстояния до пересечения
     Object3d* obstacle = nullptr;  // Итератор соотвествующий объекту пересечения
     bool haveAny = false;
     // Перебираем все объекты сцены (пока в лоб), ищем ближайшее пересечение.
     for (auto iter = objects.begin(); iter != objects.end(); ++iter) {
+        stats.intersectionAtemptCount++;
         Point thisIntersection;
         if ((*iter)->intersectRay(ray, thisIntersection)) {
             double sqrDistance = (thisIntersection - ray.getOrigin()).lengthSquared();

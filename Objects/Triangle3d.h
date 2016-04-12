@@ -22,6 +22,8 @@ public:
 
     virtual bool isIntersectBox(const BoundingBox &box) const;
 
+    virtual ~Triangle3d() { }
+
 private:
     // Вершины треугольника.
     Point a, b, c;

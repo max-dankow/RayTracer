@@ -12,6 +12,8 @@ public:
     virtual Color getColor(const Point &point) const = 0;
     virtual BoundingBox getBoundingBox() const = 0;
     virtual bool isIntersectBox(const BoundingBox &box) const = 0;
+    Object3d(){}// todo: разобраться с наследованием
+    virtual ~Object3d() {};
 };
 
 
