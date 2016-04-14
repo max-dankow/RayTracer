@@ -23,8 +23,7 @@ bool Triangle3d::intersectRay(const Ray &ray, Point &intersection) const {
     }
 
     // Решаем систему уравнений и находим t.
-    double t = - (Vector3d::dotProduct(normal, ray.getOrigin()) - D)
-               / dotNormalAndDir;
+    double t = - (Vector3d::dotProduct(normal, ray.getOrigin()) - D) / dotNormalAndDir;
 
     // Проверяем лежит ли точка пересечения с обратной стороны луча.
     if (t < 0) {
@@ -52,11 +51,8 @@ BoundingBox Triangle3d::getBoundingBox() const {
 }
 
 bool Triangle3d::isIntersectBox(const BoundingBox &box) const {
+    return getBoundingBox().intersectBox(box);
+    // todo: ЭТО ДОСТАНОЧНОЕ НО НЕ НЕОБХОДИМОЕ УСЛОВИЕ!!!
     // Если хотя бы одна точка лежит между minCorner и maxCorner, то треугольник пересекает box.
-    return  ((a.totallyLessEqualThan(box.maxCorner)
-              && box.minCorner.totallyLessEqualThan(a))
-             || (b.totallyLessEqualThan(box.maxCorner)
-                 && box.minCorner.totallyLessEqualThan(b))
-             ||(c.totallyLessEqualThan(box.maxCorner)
-                && box.minCorner.totallyLessEqualThan(c)));
+//    return  (box.containsPoint(a) || box.containsPoint(b) || box.containsPoint(c));
 }

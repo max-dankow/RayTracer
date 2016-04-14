@@ -15,6 +15,29 @@ TEST(Geometry, Vector3dNormal) {
     ASSERT_TRUE(areDoubleEqual(Vector3d(199, -0.981912, 999).normalize().length(), 1));
 }
 
+TEST(Geometry, RayPlaneIntersection) {
+    Ray ray(Point(0, 0, -1), Vector3d(0, 1, 1));
+    double t;
+    ASSERT_FALSE(ray.intersectPlane(Vector3d(0, 0, -10), Vector3d(0, 1, 0), Point(), t));
+    ASSERT_TRUE(ray.intersectPlane(Vector3d(-1, 0, 0), Vector3d(0, 1, 0), Point(), t));
+    ASSERT_EQ(ray.getPointAt(t), Point(0, 1, 0));
+    ASSERT_TRUE(ray.intersectPlane(Vector3d(-1, 0, 0), Vector3d(0, 1, -1), Point(), t));
+    ASSERT_EQ(ray.getPointAt(t), Point(0, 0.5, -0.5));
+}
+
+TEST(Geometry, RayBoxIntersection) {
+    BoundingBox box(Point(0, 0, 0), Point(10, 1, 1));
+    // Внутри.
+    ASSERT_TRUE(areDoubleEqual(box.intersectRay(Ray(Point(0,0,0), Vector3d(-1, -1, -1))), 0));
+    ASSERT_TRUE(areDoubleEqual(box.intersectRay(Ray(Point(0,0.5,0.5), Vector3d(1, 1, -1))), 0));
+
+    ASSERT_EQ(box.intersectRay(Ray(Point(10,10.5,10.5), Vector3d(1, 1, 1))), std::numeric_limits<double>::infinity());
+    ASSERT_NE(box.intersectRay(Ray(Point(-1, -1, -1), Vector3d(1, 1, 1))), std::numeric_limits<double>::infinity());
+
+    Ray ray(Ray(Point(0.5, 2, 0.5), Vector3d(0, -1, 0)));
+    ASSERT_EQ(ray.getPointAt(box.intersectRay(ray)), Point(0.5, 1, 0.5));
+}
+
 TEST(Geometry, Vector3dGeneral) {
     Vector3d vector3d(9, -0.9, 1.7);
     ASSERT_EQ(vector3d[AXIS_X], 9);

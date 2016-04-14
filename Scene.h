@@ -8,6 +8,7 @@
 #include "Geometry.h"
 #include "Painter/Painter.h"
 #include "LightSource.h"
+#include "KdTree.h"
 
 using std::unique_ptr;
 
@@ -36,10 +37,13 @@ public:
 
     Picture render();
 
-    void emplaceObject(Object3d *object);
+//    void emplaceObject(Object3d *object);
 
 private:
     bool castRay(const Ray &ray, int restDepth, Point &intersection, Color &finalColor);
+
+    Object3d *checkIntersection(const Ray &ray, Point &intersection, const std::vector<Object3d *> objectList,
+                                    Color &color);
 
     // Точка камеры.
     Point viewPoint;
@@ -53,9 +57,8 @@ private:
     Color backgroundColor = CL_BLACK;
     double backgroundIllumination = 0.1;
 
-    // Указатели на все объекты сцены, хранимые в куче.
-    std::vector<Object3d*> objects;
-
+    // Kd дерево указателей на все объекты сцены, хранимые в куче.
+    KdTree objects;
     // Указатели на все источники освещения, так же хранимые в куче.
     std::vector<LightSource*> lights;
 

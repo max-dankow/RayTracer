@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 #include <assert.h>
+#include <limits>
 #include <iostream>
 
 static const double PRECISION = 1e-6;
@@ -18,9 +19,14 @@ enum Axis {
     AXIS_Z = 2
 };
 
+
+static Axis nextAxis(Axis axis) {
+    return Axis ((int(axis) + 1) % 3);
+}
+
 class Vector3d {
 public:
-    Vector3d() { }
+    Vector3d() : x(0), y(0), z(0) { }
 
     Vector3d(double x, double y, double z) : x(x), y(y), z(z) { }
 
@@ -90,7 +96,9 @@ public:
     }
 
     bool totallyLessEqualThan(const Vector3d &other) const {
-        return (this->x <= other.x && this->y <= other.y && this->z <= other.z);
+        return ((this->x <= other.x || areDoubleEqual(this->x, other.x))
+                && (this->y <= other.y || areDoubleEqual(this->y, other.y))
+                && (this->z <= other.z || areDoubleEqual(this->z, other.z)));
     }
 
     double x, y, z;
@@ -104,7 +112,7 @@ static std::istream &operator>>(std::istream &input, Vector3d &vector) {
     return input;
 }
 
-static std::ostream &operator<<(std::ostream &output, Vector3d &vector) {
+static std::ostream &operator<<(std::ostream &output, const Vector3d &vector) {
     output << vector.x << ' ' << vector.y << ' ' << vector.z;
     return output;
 }
@@ -121,6 +129,34 @@ public:
 
     const Vector3d &getDirection() const {
         return direction;
+    }
+
+    Point getPointAt(double t) const {
+        if (t < 0) {
+            return origin;
+        } else {
+            return origin + direction * t;
+        }
+    }
+
+    // todo: в тругольнике и тут используется обдо и тоже пересечение с плоскостью.
+    bool intersectPlane(const Vector3d &a, const Vector3d &b, const Point& point, double &intersection) const {
+        Vector3d normal = Vector3d::crossProduct(a, b);
+        double D = Vector3d::dotProduct(normal, point);
+
+        double dotNormalAndDir = Vector3d::dotProduct(normal, direction);
+        if (areDoubleEqual(dotNormalAndDir, 0)) {
+            return false;
+        }
+
+        // Решаем систему уравнений и находим t.
+        double t = - (Vector3d::dotProduct(normal, origin) - D) / dotNormalAndDir;
+        if (t < 0) {
+            return false;
+        } else {
+            intersection = t;
+            return true;
+        }
     }
 
 private:
@@ -159,6 +195,69 @@ struct BoundingBox {
         area += fabs((maxCorner.y - minCorner.y) * (maxCorner.z - minCorner.z));
         area += fabs((maxCorner.z - minCorner.z) * (maxCorner.x - minCorner.x));
         return area * 2;
+    }
+
+    bool containsPoint(const Point &point)const {
+        return point.totallyLessEqualThan(maxCorner) && minCorner.totallyLessEqualThan(point);
+    }
+
+    bool intersectBox(const BoundingBox &other) const {
+        return this->minCorner.totallyLessEqualThan(other.maxCorner)
+               && other.minCorner.totallyLessEqualThan(this->maxCorner);
+    }
+
+    double intersectRay(const Ray &ray) const {
+        if (containsPoint(ray.getOrigin())) {
+            return 0;
+        }
+        double t, t_min = 0;
+        bool haveAny = false;
+        auto minCornerLocal = minCorner;
+        auto maxCornerLocal = maxCorner;
+//        Vector3d ox(maxCorner.x - minCorner.x, 0, 0);
+//        Vector3d oy(0, maxCorner.y - minCorner.y, 0);
+//        Vector3d oz(0, 0, maxCorner.z - minCorner.z);
+
+        // Переберем все плоскости и найдем для всех пересечение с лучом.
+        for (int axisIter = 0; axisIter < 3; ++axisIter) {
+            Axis axis1 = static_cast<Axis> (axisIter);
+            Axis axis2 = nextAxis(axis1);
+            Vector3d v1(0, 0, 0);
+            v1[axis1] = maxCornerLocal[axis1] - minCornerLocal[axis1];
+            Vector3d v2(0, 0, 0);
+            v2[axis2] = maxCornerLocal[axis2] - minCornerLocal[axis2];
+            if (ray.intersectPlane(v1, v2, minCornerLocal, t)) {
+                // Если точка пересечения с плоскостью лежит в боксе, то обновим минимум.
+                if (containsPoint(ray.getPointAt(t))) {
+                    if (!haveAny || t < t_min) {
+                        t_min = t;
+                        haveAny = true;
+                    }
+                }
+            }
+        }
+        for (int axisIter = 0; axisIter < 3; ++axisIter) {
+            Axis axis1 = static_cast<Axis> (axisIter);
+            Axis axis2 = nextAxis(axis1);
+            Vector3d v1(0, 0, 0);
+            v1[axis1] = minCornerLocal[axis1] - maxCornerLocal[axis1];
+            Vector3d v2(0, 0, 0);
+            v2[axis2] = minCornerLocal[axis2] - maxCornerLocal[axis2];
+            if (ray.intersectPlane(v1, v2, maxCornerLocal, t)) {
+                // Если точка пересечения с плоскостью лежит в боксе, то обновим минимум.
+                if (containsPoint(ray.getPointAt(t))) {
+                    if (!haveAny || t < t_min) {
+                        t_min = t;
+                        haveAny = true;
+                    }
+                }
+            }
+        }
+        if (haveAny) {
+            return t_min;
+        } else {
+            return std::numeric_limits<double>::infinity(); // todo: do it better
+        }
     }
 
 

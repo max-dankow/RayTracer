@@ -12,12 +12,14 @@ std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {
     std::string word;
     // solid <name>
     input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    size_t count = 0;
 
     while (!input.eof()) {
         // facet normal
         input >> word;
 
         if (word == "facet") {
+            count++;
             input >> word;
             Vector3d normal;
             input >> normal;
@@ -29,7 +31,13 @@ std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {
             input >> word >> b;
             input >> word >> c;
 
-            objects.push_back(new Triangle3d(a, b, c, CL_WHITE));
+            Color color(CL_WHITE);
+            if (count % 2 == 0) {
+                color = Color(0.7, 0, 0);
+            } else {
+                color = Color(0, 0.7, 0);
+            }
+            objects.push_back(new Triangle3d(a, b, c, color));
             // endloop
             input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             // endfacet

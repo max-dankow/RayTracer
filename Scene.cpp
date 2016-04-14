@@ -1,5 +1,8 @@
 #include <chrono>
+#include <stack>
 #include "Scene.h"
+
+#define ENABLE_ILLUMINATION
 
 
 Picture Scene::render() {
@@ -12,8 +15,8 @@ Picture Scene::render() {
     std::cout << "Start rendering scene...\n";
     stats.intersectionAtemptCount = 0;
     stats.rayNumber = 0;
-    for (size_t col = 0; col < pixelNumberWidth; ++col) {
-        for (size_t row = 0; row < pixelNumberHeight; ++row) {
+    for (size_t col = 0/*280*/; col < pixelNumberWidth; ++col) {
+        for (size_t row = 0/*170*/; row < pixelNumberHeight; ++row) {
             // Смещаем 0.5 чтобы попасть в серединку пикселя.
             Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + screenTopLeft);
             Point intersection;
@@ -42,27 +45,76 @@ Picture Scene::render() {
 bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &finalColor) {
     assert(restDepth >= 0); // todo: assert замедляет.
     stats.rayNumber++;
-    double minSqrDistance = 0;  // Квадрат (для оптимизации) минимального расстояния до пересечения
-    Object3d* obstacle = nullptr;  // Итератор соотвествующий объекту пересечения
-    bool haveAny = false;
-    // Перебираем все объекты сцены (пока в лоб), ищем ближайшее пересечение.
-    for (auto iter = objects.begin(); iter != objects.end(); ++iter) {
-        stats.intersectionAtemptCount++;
-        Point thisIntersection;
-        if ((*iter)->intersectRay(ray, thisIntersection)) {
-            double sqrDistance = (thisIntersection - ray.getOrigin()).lengthSquared();
-            if ((!haveAny || sqrDistance < minSqrDistance) && !areDoubleEqual(sqrDistance, 0)) {
-                haveAny = true;
-                minSqrDistance = sqrDistance;
-                intersection = thisIntersection;
-                finalColor = (*iter)->getColor(thisIntersection);
-                obstacle = *iter;
+
+    // Используя Kd дерево ищем пересечения со сценой.
+    Object3d* obstacle = nullptr;
+    std::stack<KdNode*> stack;
+    KdNode* node = objects.getRoot();
+    while(true) { // todo: на втором уровне вложенности начнутся большие проблемы
+        if (node->getIsLeaf()) {
+            // пора считать пересечения.
+            obstacle = checkIntersection(ray, intersection, node->getObjects(), finalColor);
+            // Если в этом листе нет пересечений, то нужно вернуться на уровень выше.
+            if (obstacle == nullptr || !node->getBox().containsPoint(intersection)) {
+                // Пересечение вообще нигде не найдено.
+                if (stack.empty()) {
+                    break;
+                }
+                node = stack.top();
+                stack.pop();
+                continue;
+            } else {
+                // Пересечение успешно найдено.
+                break;
             }
         }
+        auto leftBox = node->getBox();
+        leftBox.maxCorner[node->getSplitAxis()] = node->getSplitPoint();
+
+        auto rightBox = node->getBox();
+        rightBox.minCorner[node->getSplitAxis()] = node->getSplitPoint();
+
+        double t_left = leftBox.intersectRay(ray);
+        double t_right = rightBox.intersectRay(ray);
+
+//        std::cout << ray.getPointAt(t_left) << " = LEFT\n";
+//        std::cout << ray.getPointAt(t_right) << " = RIGHT\n";
+
+        // Сначала пересекается leftBox.
+        if (t_left <= t_right) {
+            auto old = node;
+            if (t_left != std::numeric_limits<double>::infinity()) {
+                node = old->getLeftPointer();
+                if (t_right != std::numeric_limits<double>::infinity()) {// todo : method isNotInf
+                    stack.push(old->getRightPointer());
+                }
+                continue;
+            }
+        }
+        // Сначала пересекается rightBox.
+        if (t_right < t_left) {
+            auto old = node;
+            if (t_right != std::numeric_limits<double>::infinity()) {
+                node = old->getRightPointer();
+                if (t_left != std::numeric_limits<double>::infinity()) {
+                    stack.push(old->getLeftPointer());
+                }
+                continue;
+            }
+        }
+
+        if (stack.empty()) {
+            break;
+        }
+        node = stack.top();
+        stack.pop();
     }
-    if (!haveAny) {
+    // Если не нашли пересечений.
+    if (obstacle == nullptr) {
         return false;
     }
+
+#ifdef ENABLE_ILLUMINATION
     if (restDepth == 0) {
         return true;
     }
@@ -91,11 +143,36 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
         hsv.v = 1;
     }
     finalColor = hsv2rgb(hsv);
+#endif
     return true;
 }
 
-void Scene::emplaceObject(Object3d *object) {
-    objects.emplace_back(object);
+Object3d *Scene::checkIntersection(const Ray &ray, Point &intersection, const std::vector<Object3d *> objectList,
+                                   Color &color) {
+    double minSqrDistance = 0;  // Квадрат (для оптимизации) минимального расстояния до пересечения
+    Object3d* obstacle = nullptr;  // Итератор соотвествующий объекту пересечения
+    bool haveAny = false;
+    for (auto iter = objectList.begin(); iter != objectList.end(); ++iter) {
+        stats.intersectionAtemptCount++;
+        Point thisIntersection;
+        if ((*iter)->intersectRay(ray, thisIntersection)) {
+            double sqrDistance = (thisIntersection - ray.getOrigin()).lengthSquared();
+            if ((!haveAny || sqrDistance < minSqrDistance) && !areDoubleEqual(sqrDistance, 0)) {
+                haveAny = true;
+                minSqrDistance = sqrDistance;
+                intersection = thisIntersection;
+                obstacle = *iter;
+                color = obstacle->getColor(intersection);
+            }
+        }
+    }
+    return obstacle;
 }
+
+
+//
+//void Scene::emplaceObject(Object3d *object) {
+//    objects.emplace_back(object);
+//}
 
 

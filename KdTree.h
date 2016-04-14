@@ -50,12 +50,24 @@ public:
         return rightSubTree;
     }
 
+    KdNode* getRightPointer() {
+        return rightSubTree.get();
+    }
+
+    KdNode* getLeftPointer() {
+        return leftSubTree.get();
+    }
+
     void resetRightPointer(KdNode* &&node) {
         rightSubTree.reset(node);
     }
 
     std::vector<Object3d*> &getObjects() { // todo : наличие такого прямого доступа подозрительно
         return objects;
+    }
+
+    void clearObjects() {
+        objects.clear();
     }
 
     void setObjects(std::vector<Object3d*> &&objects) {
@@ -72,6 +84,31 @@ public:
 
     unsigned long getObjectsNumber() const {
         return objects.size();
+    }
+
+    void print(size_t depth) {
+        if (!isLeaf) {
+
+            for (size_t i = 0; i < depth; ++i) {
+                std::cout << "\t";
+            }
+            std::cout << splitAxis << ' ' << splitPoint <<  " N=" << objects.size() << '\n';
+            for (size_t i = 0; i < depth; ++i) {
+                std::cout << "\t";
+            }
+            std::cout << "left:\n";
+            leftSubTree->print(depth + 1);
+            for (size_t i = 0; i < depth; ++i) {
+                std::cout << "\t";
+            }
+            std::cout << "right:\n";
+            rightSubTree->print(depth + 1);
+        } else {
+            for (size_t i = 0; i < depth; ++i) {
+                std::cout << "\t";
+            }
+            std::cout << "LEAF " << objects.size() << "\n";
+        }
     }
 
 private:
@@ -93,13 +130,21 @@ public:
 
     KdTree(const KdTree &) = delete;
 
-    std::unique_ptr<KdNode> root;
+    KdTree(KdTree &&other) {
+        this->root = std::move(other.root);
+    }
+
+    KdNode* const getRoot() const {
+        return root.get();
+    }
+
 private:
     static const size_t MAX_DEPTH = 10;
-    static const size_t MIN_OBJECTS_PER_LIST = 1;
-    static const size_t REGULAR_GRID_COUNT = 10;
+    static const size_t MIN_OBJECTS_PER_LIST = 50;
+    static const size_t REGULAR_GRID_COUNT = 1000;
     const double COST_EMPTY = 0;
     size_t nodeNumber;
+    std::unique_ptr<KdNode> root;
 
     void split(std::unique_ptr<KdNode> &node, size_t depth);
 
