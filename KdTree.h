@@ -8,11 +8,12 @@
 
 enum SplitMethod {
     // Пробные точки для эвритики разбиения берутся по границам примитивов.
-            SPLIT_BY_BOUNDS,
+    SPLIT_BY_BOUNDS,
     // Пробные точки для эвритики разбиения берутся по сетке с фиксированным шагом.
-            SPLIT_BY_REGULAR_GRID,
+    SPLIT_BY_REGULAR_GRID,
+    SPLIT_BY_GRID_FAST,
     // Начиная с определенной глубины вместо метода SPLIT_BY_REGULAR_GRID используется метод SPLIT_BY_BOUNDS.
-            SPLIT_ADAPTIVE
+    SPLIT_ADAPTIVE
 };
 
 class KdNode {
@@ -125,6 +126,7 @@ private:
 
     unsigned long calculateNumberOfPrimitivesInBox(const std::vector<Object3d *> &objects,
                                                    const BoundingBox &box);
+
     size_t getRegularGridCount() const {
         return REGULAR_GRID_COUNT;
     }
@@ -134,11 +136,13 @@ private:
     bool findSplitPlane(SplitMethod method, std::unique_ptr<KdNode> &node, Axis &splitAxis, double &splitPoint);
 
     bool findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
-    bool findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
 
-    const SplitMethod splitMethod = SPLIT_ADAPTIVE;
+    bool findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+    bool findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+
+    const SplitMethod splitMethod = SPLIT_BY_GRID_FAST;
     static const size_t REGULAR_GRID_COUNT = 32;
-    const double COST_EMPTY = 0;
+    const double COST_EMPTY = 0.1;
     size_t nodeNumber;
     std::unique_ptr<KdNode> root;
 };

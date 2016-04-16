@@ -9,6 +9,7 @@ std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {
     if (!input.is_open()) {
         throw std::invalid_argument("File not found");
     }
+    std::cout << "Reading " << path  << std::endl;
     std::string word;
     // solid <name>
     input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

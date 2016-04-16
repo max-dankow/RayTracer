@@ -3,7 +3,7 @@
 #include "KdTree.h"
 
 KdTree::KdTree(const std::vector<Object3d *> &objects) {
-    std::cout << "Start building Kd-tree..." << std::endl;
+    std::cout << "Building Kd-tree..." << std::endl;
     auto startTime = std::chrono::steady_clock::now();
 
     if (objects.empty()) {
@@ -102,15 +102,17 @@ bool KdTree::findSplitPlane(SplitMethod method, std::unique_ptr<KdNode> &node, A
         return false;
     }
     switch (method) {
-        case SPLIT_BY_REGULAR_GRID:
-            return findSplitByGrid(node, splitAxis, splitPoint);
         case SPLIT_BY_BOUNDS:
             return findSplitByBounds(node, splitAxis, splitPoint);
+        case SPLIT_BY_REGULAR_GRID:
+            return findSplitByGrid(node, splitAxis, splitPoint);
+        case SPLIT_BY_GRID_FAST:
+            return findSplitByGridFast(node, splitAxis, splitPoint);
         case SPLIT_ADAPTIVE:
             if (node->getObjectsNumber() <= getRegularGridCount()) {
                 return findSplitByBounds(node, splitAxis, splitPoint);
             } else {
-                return findSplitByGrid(node, splitAxis, splitPoint);
+                return findSplitByGridFast(node, splitAxis, splitPoint);
             }
 
         default:
@@ -123,7 +125,7 @@ bool KdTree::findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin
     splitPointMin = surroundBox.minCorner.x;
     splitAxisMin = AXIS_X;
 
-    double heuristicsMin = surfaceAreaHeuristic(splitAxisMin, splitPointMin, surroundBox, node->getObjects());
+    double heuristicMin = surfaceAreaHeuristic(splitAxisMin, splitPointMin, surroundBox, node->getObjects());
 
     // Для каждой оси и для каждого пробного положения высчитать эвристику площади и найти минимум.
     for (int axisIter = 0; axisIter < 3; ++axisIter) {
@@ -131,13 +133,13 @@ bool KdTree::findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin
         // Т.к. границы примитивов могут и не принадлежать surroundBox, то это нужно проверять.
         double splitPointFrom = surroundBox.minCorner[axis];
         double splitPointTo = surroundBox.maxCorner[axis];
-        for (Object3d *pObject : node->getObjects()) {
-            auto objectBox = pObject->getBoundingBox();
+        for (Object3d *object : node->getObjects()) {
+            auto objectBox = object->getBoundingBox();
             double splitPoint = objectBox.minCorner[axis];
             if (splitPoint >= splitPointFrom && splitPoint <= splitPointTo) {
-                double heuristics = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
-                if (heuristics < heuristicsMin) {
-                    heuristicsMin = heuristics;
+                double heuristic = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
+                if (heuristic < heuristicMin) {
+                    heuristicMin = heuristic;
                     splitAxisMin = axis;
                     splitPointMin = splitPoint;
                 }
@@ -146,23 +148,23 @@ bool KdTree::findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin
     }
     // Если стоимость прослеживания дочерних узлов не будет меньше
     // чем стоимость прослеживания узла целиком, то остановится.
-    return node->getObjects().size() * surroundBox.surfaceArea() > heuristicsMin;
+    return node->getObjects().size() * surroundBox.surfaceArea() > heuristicMin;
 }
 
 bool KdTree::findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin) {
     auto surroundBox = node->getBox();
     splitPointMin = surroundBox.minCorner.x;
     splitAxisMin = AXIS_X;
-    double heuristicsMin = surfaceAreaHeuristic(splitAxisMin, splitPointMin, surroundBox, node->getObjects());
+    double heuristicMin = node->getObjects().size() * surroundBox.surfaceArea();
     for (int axisIter = 0; axisIter < 3; ++axisIter) {
         Axis axis = static_cast<Axis> (axisIter);
         for (size_t i = 0; i < REGULAR_GRID_COUNT; ++i) {
             double splitPoint = surroundBox.minCorner[axis]
                                 + i * (surroundBox.maxCorner[axis] - surroundBox.minCorner[axis])
                                   / REGULAR_GRID_COUNT;
-            double heuristics = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
-            if (heuristics < heuristicsMin) {
-                heuristicsMin = heuristics;
+            double heuristic = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
+            if (heuristic < heuristicMin) {
+                heuristicMin = heuristic;
                 splitAxisMin = axis;
                 splitPointMin = splitPoint;
             }
@@ -170,5 +172,84 @@ bool KdTree::findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, 
     }
     // Если стоимость прослеживания дочерних узлов не будет меньше
     // чем стоимость прослеживания узла целиком, то остановится.
-    return node->getObjects().size() * surroundBox.surfaceArea() > heuristicsMin;
+    return node->getObjects().size() * surroundBox.surfaceArea() > heuristicMin;
+}
+
+bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin) {
+    auto surroundBox = node->getBox();
+    splitPointMin = surroundBox.minCorner.x;
+    splitAxisMin = AXIS_X;
+    size_t gridCount = getRegularGridCount();
+    double heuristicMin = node->getObjects().size() * surroundBox.surfaceArea();
+    for (int axisIter = 0; axisIter < 3; ++axisIter) {
+        Axis axis = static_cast<Axis> (axisIter);
+        double splitPointFrom = surroundBox.minCorner[axis];
+        double splitPointTo = surroundBox.maxCorner[axis];
+        double gridStep = (splitPointTo - splitPointFrom) / gridCount;
+
+        // Сколько примитивов начинаются в соответсвующей корзинке.
+        std::vector<size_t> startsHereCount(gridCount, 0);
+        // Аналогично сколько заканчиваются.
+        std::vector<size_t> endsHereCount(gridCount, 0);
+
+        // Заполняем эти данные.
+        for (Object3d *object : node->getObjects()) {
+            auto objectBox = object->getBoundingBox();
+            long binIndex;
+
+            // startsHereCount
+            double d = (objectBox.minCorner[axis] - splitPointFrom) / gridStep;
+            // Если начало в плоскости разреза, то учесть его нужно уже в предыдущей корзине.
+            if (Geometry::areDoubleEqual(d - std::round(d), 0)) {
+                binIndex = (long) std::round(d) - 1;
+            } else {
+                binIndex = (long) std::floor(d);
+            }
+            // Если начало до splitPointFrom
+            if (binIndex < 0) {
+                binIndex = 0;
+            }
+            startsHereCount[binIndex]++;
+
+            // endsHereCount
+            d = (objectBox.maxCorner[axis] - splitPointFrom) / gridStep;
+            // Если начало в плоскости разреза, то учесть его нужно уже в предыдущей корзине.
+            if (Geometry::areDoubleEqual(d - std::round(d), 0)) {
+                binIndex = (long) std::round(d);
+            } else {
+                binIndex = (long) std::floor(d);
+            }
+            // Если начало после splitPointTo
+            if (binIndex > gridCount - 1) {
+                binIndex = gridCount - 1;
+            }
+            endsHereCount[binIndex]++;
+        }
+
+        size_t leftObjectNumber = 0;
+        size_t rightObjectNumber = std::accumulate(endsHereCount.begin(), endsHereCount.end(), size_t(0));
+
+        // Считаем эвристику в точках сетки.
+        for (size_t i = 1; i < gridCount; ++i) {
+            double splitPoint = splitPointFrom + i * gridStep;
+            auto leftBox = surroundBox;
+            leftBox.maxCorner[axis] = splitPoint;
+            leftObjectNumber += startsHereCount[i - 1];
+
+            auto rightBox = surroundBox;
+            rightBox.minCorner[axis] = splitPoint;
+//            assert(rightObjectNumber >= endsHereCount[i]);//todo remove after debug
+            rightObjectNumber -= endsHereCount[i - 1];
+
+            double heuristic = COST_EMPTY + leftObjectNumber * leftBox.surfaceArea() + rightObjectNumber * rightBox.surfaceArea();
+            if (heuristic < heuristicMin) {
+                heuristicMin = heuristic;
+                splitAxisMin = axis;
+                splitPointMin = splitPoint;
+            }
+        }
+    }
+    // Если стоимость прослеживания дочерних узлов не будет меньше
+    // чем стоимость прослеживания узла целиком, то остановится.
+    return node->getObjects().size() * surroundBox.surfaceArea() > heuristicMin;
 }

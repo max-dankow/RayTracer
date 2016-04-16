@@ -55,7 +55,7 @@ private:
 
     size_t pixelNumberWidth, pixelNumberHeight;
     Color backgroundColor = CL_BLACK;
-    double backgroundIllumination = 0.1;
+    double backgroundIllumination = 0.025;
 
     // Kd дерево указателей на все объекты сцены, хранимые в куче.
     KdTree objects;
