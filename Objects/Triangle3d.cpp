@@ -1,7 +1,8 @@
 #include "Triangle3d.h"
 
-Triangle3d::Triangle3d(const Point &a, const Point &b, const Point &c, const Color &color) :
-        a(a), b(b), c(c), color(color) {
+Triangle3d::Triangle3d(const Point &a, const Point &b, const Point &c, const Color &color, double reflectance) :
+        a(a), b(b), c(c), color(color), reflectance(reflectance) {
+    assert(reflectance >= 0 && reflectance <= 1);
     ab = Vector3d(a, b);
     bc = Vector3d(b, c);
     ca = Vector3d(c, a);

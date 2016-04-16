@@ -17,6 +17,10 @@ struct Color {
         return Color(std::min(r * k, 1.), std::min(g * k, 1.), std::min(b * k, 1.));
     }
 
+    Color operator+(const Color &other) {
+        return Color(std::min(this->r + other.r, 1.), std::min(this->g + other.g, 1.), std::min(this->b + other.b, 1.));
+    }
+
     double r, g, b;
     double h, s, v;
 };

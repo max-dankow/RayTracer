@@ -3,7 +3,7 @@
 #include "Scene.h"
 
 #define ENABLE_ILLUMINATION
-
+#define ENABLE_REFLECTION
 
 Picture Scene::render() {
     Vector3d colVector = Vector3d(screenBottomRight.x - screenTopLeft.x,
@@ -21,7 +21,7 @@ Picture Scene::render() {
             Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + screenTopLeft);
             Point intersection;
             Color finalColor;
-            if (!castRay(Ray(viewPoint, pixel - viewPoint), 1, intersection, finalColor)) {
+            if (!castRay(Ray(viewPoint, pixel - viewPoint), 2, intersection, finalColor)) {
                 finalColor = backgroundColor;
             }
             picture.setAt(col, row, finalColor);
@@ -113,11 +113,12 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
     if (obstacle == nullptr) {
         return false;
     }
-
-#ifdef ENABLE_ILLUMINATION
     if (restDepth == 0) {
         return true;
     }
+
+#ifdef ENABLE_ILLUMINATION
+
     // Расчет освещенности.
     Color hsv = rgb2hsv(finalColor);
     double totalBrightness = backgroundIllumination;
@@ -144,6 +145,25 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
     }
     finalColor = hsv2rgb(hsv);
 #endif
+
+#ifdef ENABLE_REFLECTION
+    double cosRayNormal = Vector3d::dotProduct(obstacle->getNormal(intersection), ray.getDirection().normalize());
+    // Если луч направлен с лицевой стороны.
+    if (cosRayNormal <= 0) {
+        cosRayNormal = fabs(cosRayNormal);
+        Vector3d reflectionDirection(((obstacle->getNormal(intersection) * cosRayNormal) + ray.getDirection()) * 2 - ray.getDirection());
+        assert(Geometry::areDoubleEqual(cosRayNormal, Vector3d::dotProduct(reflectionDirection, obstacle->getNormal(intersection))));
+        Ray reflectionRay(intersection, reflectionDirection);
+        Point obstacleHitPoint;
+        Color obstacleColor;
+        if (castRay(reflectionRay, restDepth - 1, obstacleHitPoint, obstacleColor)) {
+            // Мешаем цвета.
+            double reflectance = obstacle->getReflectance();
+            finalColor = obstacleColor * reflectance + finalColor * (1 - reflectance);
+        }
+    }
+#endif
+
     return true;
 }
 
@@ -168,8 +188,6 @@ Object3d *Scene::checkIntersection(const Ray &ray, Point &intersection, const st
     }
     return obstacle;
 }
-
-
 //
 //void Scene::emplaceObject(Object3d *object) {
 //    objects.emplace_back(object);

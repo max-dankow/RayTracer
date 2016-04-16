@@ -10,13 +10,17 @@
 class Triangle3d : public Object3d {
 public:
 
-    Triangle3d(const Point &a, const Point &b, const Point &c, const Color &color = CL_WHITE);
+    Triangle3d(const Point &a, const Point &b, const Point &c, const Color &color = CL_WHITE, double reflectance = 0);
 
     virtual Vector3d getNormal(const Point &point) const;
 
     virtual bool intersectRay(const Ray &ray, Point &intersection) const;
 
     virtual Color getColor(const Point &point) const;
+
+    virtual double getReflectance() const {
+        return reflectance;
+    }
 
     virtual BoundingBox getBoundingBox() const;
 
@@ -28,6 +32,8 @@ private:
     // Вершины треугольника.
     Point a, b, c;
     Color color;
+    // Коэффициент отражения.
+    double reflectance;
     // Предпосчитанный вектор нормали.
     Vector3d normal;
     // Для некоторого ускорения добавим предпосчитанные величины.
