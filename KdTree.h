@@ -3,23 +3,28 @@
 
 #include <memory>
 #include <vector>
-#include "Geometry.h"
+#include "Geometry/Geometry.h"
 #include "Objects/Object3d.h"
+
+enum SplitMethod {
+    // Пробные точки для эвритики разбиения берутся по границам примитивов.
+            SPLIT_BY_BOUNDS,
+    // Пробные точки для эвритики разбиения берутся по сетке с фиксированным шагом.
+            SPLIT_BY_REGULAR_GRID,
+    // Начиная с определенной глубины вместо метода SPLIT_BY_REGULAR_GRID используется метод SPLIT_BY_BOUNDS.
+            SPLIT_ADAPTIVE
+};
 
 class KdNode {
 public:
     KdNode() { }
 
-    KdNode(const BoundingBox &box, KdNode* parent,
-           const std::vector<Object3d*> &objects) :
-            box(box), parent(parent), objects(objects) { }
+    KdNode(const BoundingBox &box,
+           const std::vector<Object3d *> &objects) :
+            box(box), objects(objects) { }
 
     const BoundingBox &getBox() const {
         return box;
-    }
-
-    void setBox(const BoundingBox &box) {
-        KdNode::box = box;
     }
 
     Axis getSplitAxis() const {
@@ -50,19 +55,19 @@ public:
         return rightSubTree;
     }
 
-    KdNode* getRightPointer() {
+    KdNode *getRightPointer() {
         return rightSubTree.get();
     }
 
-    KdNode* getLeftPointer() {
+    KdNode *getLeftPointer() {
         return leftSubTree.get();
     }
 
-    void resetRightPointer(KdNode* &&node) {
+    void resetRightPointer(KdNode *&&node) {
         rightSubTree.reset(node);
     }
 
-    std::vector<Object3d*> &getObjects() { // todo : наличие такого прямого доступа подозрительно
+    std::vector<Object3d *> &getObjects() { // todo : наличие такого прямого доступа подозрительно
         return objects;
     }
 
@@ -70,7 +75,7 @@ public:
         objects.clear();
     }
 
-    void setObjects(std::vector<Object3d*> &&objects) {
+    void setObjects(std::vector<Object3d *> &&objects) {
         KdNode::objects = std::move(objects);
     }
 
@@ -86,7 +91,7 @@ public:
         return objects.size();
     }
 
-    void print(size_t depth) {
+    /*void print(size_t depth) {
         if (!isLeaf) {
 
             for (size_t i = 0; i < depth; ++i) {
@@ -109,24 +114,22 @@ public:
             }
             std::cout << "LEAF " << objects.size() << "\n";
         }
-    }
+    }*/
 
 private:
-    // Флаг, является ли узел листом.
     bool isLeaf;
     BoundingBox box;
     Axis splitAxis;
     double splitPoint;
     std::unique_ptr<KdNode> leftSubTree, rightSubTree;
-    KdNode* parent;  // Ресурсом владет другой указатель
     // Если не лист, то хранит список объектов принадлежащий обоим поддеревьям.
-    std::vector<Object3d*> objects;
+    std::vector<Object3d *> objects;
 };
 
 
 class KdTree {
 public:
-    KdTree(const std::vector<Object3d*> &objects);
+    KdTree(const std::vector<Object3d *> &objects);
 
     KdTree(const KdTree &) = delete;
 
@@ -134,26 +137,35 @@ public:
         this->root = std::move(other.root);
     }
 
-    KdNode* const getRoot() const {
+    KdNode *const getRoot() const {
         return root.get();
     }
 
 private:
-    static const size_t MAX_DEPTH = 10;
-    static const size_t MIN_OBJECTS_PER_LIST = 50;
-    static const size_t REGULAR_GRID_COUNT = 1000;
-    const double COST_EMPTY = 0;
-    size_t nodeNumber;
-    std::unique_ptr<KdNode> root;
-
+    // Рекурсивное разбиение узла.
     void split(std::unique_ptr<KdNode> &node, size_t depth);
 
     double surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
-                                    const std::vector<Object3d*> &objects);
+                                const std::vector<Object3d *> &objects);
 
-    unsigned long calculateNumberOfPrimitivesInBox(const std::vector<Object3d*> &objects,
+    unsigned long calculateNumberOfPrimitivesInBox(const std::vector<Object3d *> &objects,
                                                    const BoundingBox &box);
+    size_t getRegularGridCount() const {
+        return REGULAR_GRID_COUNT;
+    }
 
+    // Ищет плоскость, разбивающую box самым выгодным способом.
+    // Возвращает true, если такая плоскость существует, и false, если не нужно делить.
+    bool findSplitPlane(SplitMethod method, std::unique_ptr<KdNode> &node, Axis &splitAxis, double &splitPoint);
+
+    bool findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+    bool findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+
+    const SplitMethod splitMethod = SPLIT_ADAPTIVE;
+    static const size_t REGULAR_GRID_COUNT = 32;
+    const double COST_EMPTY = 0;
+    size_t nodeNumber;
+    std::unique_ptr<KdNode> root;
 };
 
 #endif //RAYTRACER_KDTREE_H
