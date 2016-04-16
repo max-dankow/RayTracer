@@ -13,10 +13,10 @@ Picture Scene::render() {
     auto startTime = std::chrono::steady_clock::now();
 
     std::cout << "Start rendering scene...\n";
-    stats.intersectionAtemptCount = 0;
+    stats.intersectionAttemptCount = 0;
     stats.rayNumber = 0;
-    for (size_t col = 0/*280*/; col < pixelNumberWidth; ++col) {
-        for (size_t row = 0/*170*/; row < pixelNumberHeight; ++row) {
+    for (size_t col = 0; col < pixelNumberWidth; ++col) {
+        for (size_t row = 0; row < pixelNumberHeight; ++row) {
             // Смещаем 0.5 чтобы попасть в серединку пикселя.
             Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + screenTopLeft);
             Point intersection;
@@ -38,7 +38,7 @@ Picture Scene::render() {
         << "Total time " << workTime.count() / 60 << "m "
         << workTime.count() % 60 << "s\n"
         << "Statistics:\n"
-        << "\tAttempts per ray " << double (stats.intersectionAtemptCount) / stats.rayNumber << '\n';
+        << "\tAttempts per ray " << double (stats.intersectionAttemptCount) / stats.rayNumber << '\n';
     return picture;
 }
 
@@ -127,7 +127,7 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
         double sqrDistanceToLight = intersectionToLight.lengthSquared();
         double dotProduct = Vector3d::dotProduct(obstacle->getNormal(intersection), lightRay.getDirection());
         // Отсекаем источники, находящиеся не перед поверхностью.
-        if (dotProduct <= 0 || areDoubleEqual(sqrDistanceToLight, 0)) {
+        if (dotProduct <= 0 || Geometry::areDoubleEqual(sqrDistanceToLight, 0)) {
             continue;
         }
         Point obstacleHitPoint;
@@ -153,11 +153,11 @@ Object3d *Scene::checkIntersection(const Ray &ray, Point &intersection, const st
     Object3d* obstacle = nullptr;  // Итератор соотвествующий объекту пересечения
     bool haveAny = false;
     for (auto iter = objectList.begin(); iter != objectList.end(); ++iter) {
-        stats.intersectionAtemptCount++;
+        stats.intersectionAttemptCount++;
         Point thisIntersection;
         if ((*iter)->intersectRay(ray, thisIntersection)) {
             double sqrDistance = (thisIntersection - ray.getOrigin()).lengthSquared();
-            if ((!haveAny || sqrDistance < minSqrDistance) && !areDoubleEqual(sqrDistance, 0)) {
+            if ((!haveAny || sqrDistance < minSqrDistance) && !Geometry::areDoubleEqual(sqrDistance, 0)) {
                 haveAny = true;
                 minSqrDistance = sqrDistance;
                 intersection = thisIntersection;

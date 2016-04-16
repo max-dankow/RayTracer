@@ -91,31 +91,6 @@ public:
         return objects.size();
     }
 
-    /*void print(size_t depth) {
-        if (!isLeaf) {
-
-            for (size_t i = 0; i < depth; ++i) {
-                std::cout << "\t";
-            }
-            std::cout << splitAxis << ' ' << splitPoint <<  " N=" << objects.size() << '\n';
-            for (size_t i = 0; i < depth; ++i) {
-                std::cout << "\t";
-            }
-            std::cout << "left:\n";
-            leftSubTree->print(depth + 1);
-            for (size_t i = 0; i < depth; ++i) {
-                std::cout << "\t";
-            }
-            std::cout << "right:\n";
-            rightSubTree->print(depth + 1);
-        } else {
-            for (size_t i = 0; i < depth; ++i) {
-                std::cout << "\t";
-            }
-            std::cout << "LEAF " << objects.size() << "\n";
-        }
-    }*/
-
 private:
     bool isLeaf;
     BoundingBox box;

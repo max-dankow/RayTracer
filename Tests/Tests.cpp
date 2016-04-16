@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
-#include "../Geometry.h"
+#include "../Geometry/Geometry.h"
+#include "../Geometry/BoundingBox.h"
+#include "../Geometry/Ray.h"
 #include "../Objects/Triangle3d.h"
 
 TEST(Vector3d, Order) {
@@ -12,7 +14,7 @@ TEST(Vector3d, Order) {
 TEST(Geometry, Vector3dNormal) {
     ASSERT_EQ(Vector3d(0, 100, 0).normalize(), Vector3d(0, 1, 0));
     ASSERT_EQ(Vector3d(3, 4, 0).normalize(), Vector3d(0.6, 0.8, 0));
-    ASSERT_TRUE(areDoubleEqual(Vector3d(199, -0.981912, 999).normalize().length(), 1));
+    ASSERT_TRUE(Geometry::areDoubleEqual(Vector3d(199, -0.981912, 999).normalize().length(), 1));
 }
 
 TEST(Geometry, RayPlaneIntersection) {
@@ -28,8 +30,8 @@ TEST(Geometry, RayPlaneIntersection) {
 TEST(Geometry, RayBoxIntersection) {
     BoundingBox box(Point(0, 0, 0), Point(10, 1, 1));
     // Внутри.
-    ASSERT_TRUE(areDoubleEqual(box.intersectRay(Ray(Point(0,0,0), Vector3d(-1, -1, -1))), 0));
-    ASSERT_TRUE(areDoubleEqual(box.intersectRay(Ray(Point(0,0.5,0.5), Vector3d(1, 1, -1))), 0));
+    ASSERT_TRUE(Geometry::areDoubleEqual(box.intersectRay(Ray(Point(0,0,0), Vector3d(-1, -1, -1))), 0));
+    ASSERT_TRUE(Geometry::areDoubleEqual(box.intersectRay(Ray(Point(0,0.5,0.5), Vector3d(1, 1, -1))), 0));
 
     ASSERT_EQ(box.intersectRay(Ray(Point(10,10.5,10.5), Vector3d(1, 1, 1))), std::numeric_limits<double>::infinity());
     ASSERT_NE(box.intersectRay(Ray(Point(-1, -1, -1), Vector3d(1, 1, 1))), std::numeric_limits<double>::infinity());

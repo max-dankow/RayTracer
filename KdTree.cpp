@@ -2,7 +2,7 @@
 #include <vector>
 #include "KdTree.h"
 
-KdTree::KdTree(const std::vector<Object3d*> &objects) {
+KdTree::KdTree(const std::vector<Object3d *> &objects) {
     std::cout << "Start building Kd-tree..." << std::endl;
     auto startTime = std::chrono::steady_clock::now();
 
@@ -12,12 +12,9 @@ KdTree::KdTree(const std::vector<Object3d*> &objects) {
     }
     // Вычисляем всеобъемлющий box
     BoundingBox box(objects.front()->getBoundingBox());
-    for (const Object3d* object : objects) {
+    for (const Object3d *object : objects) {
         box.extend(object->getBoundingBox());
     }
-
-//    std::cout << "Root bounding box:\n"
-//        << box.minCorner << '\n' << box.maxCorner << '\n';
 
     root.reset(new KdNode(box, objects));
     nodeNumber = 1;
@@ -26,10 +23,9 @@ KdTree::KdTree(const std::vector<Object3d*> &objects) {
     auto endTime = std::chrono::steady_clock::now();
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
     std::cout << "Kd-tree has been built: "
-        << nodeNumber << " nodes" << std::endl
-        << "Total time " << workTime.count() / 60 << "m "
-        << workTime.count() % 60 << "s" << std::endl;
-//    root->print(0);
+    << nodeNumber << " nodes" << std::endl
+    << "Total time " << workTime.count() / 60 << "m "
+    << workTime.count() % 60 << "s" << std::endl;
 }
 
 void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
@@ -51,14 +47,14 @@ void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
 
     auto leftBox = node->getBox();
     leftBox.maxCorner[splitAxis] = splitPoint;
-    std::vector<Object3d*> leftObjects;
+    std::vector<Object3d *> leftObjects;
 
     auto rightBox = node->getBox();
     rightBox.minCorner[splitAxis] = splitPoint;
-    std::vector<Object3d*> rightObjects;
+    std::vector<Object3d *> rightObjects;
 
     // Распределяем объекты по поддеревьям.
-    for (Object3d* pObject : node->getObjects()) {
+    for (Object3d *pObject : node->getObjects()) {
         if (pObject->isIntersectBox(leftBox)) {
             leftObjects.push_back(pObject);
         }
@@ -78,7 +74,7 @@ void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
 }
 
 double KdTree::surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
-                                    const std::vector<Object3d*> &objects) {
+                                    const std::vector<Object3d *> &objects) {
     auto leftBox = box;
     leftBox.maxCorner[splitAxis] = splitPoint; // todo : make separate method
     unsigned long leftObjectNumber = calculateNumberOfPrimitivesInBox(objects, leftBox);
@@ -93,7 +89,7 @@ double KdTree::surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const Bou
 unsigned long KdTree::calculateNumberOfPrimitivesInBox(const std::vector<Object3d *> &objects,
                                                        const BoundingBox &box) {
     unsigned long count = 0;
-    for (const Object3d* object : objects) {
+    for (const Object3d *object : objects) {
         if (object->isIntersectBox(box)) {
             count++;
         }

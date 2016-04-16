@@ -2,7 +2,7 @@
 #define RAYTRACER_LIGHTSOURCE_H
 
 #include "Picture.h"
-#include "Geometry.h"
+#include "Geometry/Geometry.h"
 
 // Представляет источник освещения, расположенный в точке point и яркостью brightness.
 class LightSource {

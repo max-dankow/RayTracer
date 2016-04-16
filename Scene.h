@@ -5,7 +5,7 @@
 #include <list>
 #include <memory>
 #include "Objects/Object3d.h"
-#include "Geometry.h"
+#include "Geometry/Geometry.h"
 #include "Painter/Painter.h"
 #include "LightSource.h"
 #include "KdTree.h"
@@ -13,10 +13,10 @@
 using std::unique_ptr;
 
 struct Statistics {
-    unsigned long intersectionAtemptCount;
+    unsigned long intersectionAttemptCount;
     unsigned long rayNumber;
 };
-
+// todo: устранить безобразие с памятью!
 class Scene {
 public:
 

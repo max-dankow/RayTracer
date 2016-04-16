@@ -15,22 +15,11 @@ Vector3d Triangle3d::getNormal(const Point &point) const {
 }
 
 bool Triangle3d::intersectRay(const Ray &ray, Point &intersection) const {
-    double dotNormalAndDir = Vector3d::dotProduct(normal, ray.getDirection());
-
-    // Проверяем параллельны ли луч и плоскость треугольника.
-    if (areDoubleEqual(dotNormalAndDir, 0)) {
+    double t = 0;
+    if (!ray.intersectPlane(normal, D, a, t)) {
         return false;
     }
-
-    // Решаем систему уравнений и находим t.
-    double t = - (Vector3d::dotProduct(normal, ray.getOrigin()) - D) / dotNormalAndDir;
-
-    // Проверяем лежит ли точка пересечения с обратной стороны луча.
-    if (t < 0) {
-        return false;
-    }
-
-    Point p = ray.getOrigin() + ray.getDirection() * t;  // Точка пересечения луча с плоскостью треугольника
+    Point p = ray.getPointAt(t);  // Точка пересечения луча с плоскостью треугольника
     // Проверяем лежит ли p внутри треугольника.
     Vector3d ap(a, p), bp(b, p), cp(c, p);
     if (Vector3d::dotProduct(normal, Vector3d::crossProduct(ab, ap)) >= 0
@@ -51,8 +40,6 @@ BoundingBox Triangle3d::getBoundingBox() const {
 }
 
 bool Triangle3d::isIntersectBox(const BoundingBox &box) const {
+    // todo: вынести на другой уровень
     return getBoundingBox().intersectBox(box);
-    // todo: ЭТО ДОСТАНОЧНОЕ НО НЕ НЕОБХОДИМОЕ УСЛОВИЕ!!!
-    // Если хотя бы одна точка лежит между minCorner и maxCorner, то треугольник пересекает box.
-//    return  (box.containsPoint(a) || box.containsPoint(b) || box.containsPoint(c));
 }

@@ -32,11 +32,11 @@ std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {
             input >> word >> c;
 
             Color color(CL_WHITE);
-            if (count % 2 == 0) {
-                color = Color(0.7, 0, 0);
-            } else {
-                color = Color(0, 0.7, 0);
-            }
+//            if (count % 2 == 0) {
+//                color = Color(0.7, 0, 0);
+//            } else {
+//                color = Color(0, 0.7, 0);
+//            }
             objects.push_back(new Triangle3d(a, b, c, color));
             // endloop
             input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
