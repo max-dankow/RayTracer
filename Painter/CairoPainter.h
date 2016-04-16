@@ -1,9 +1,10 @@
 #ifndef RAYTRACER_CAIROPAINTER_H
 #define RAYTRACER_CAIROPAINTER_H
 
-#include "Painter.h"
 #include <cairo.h>
 #include <gtk/gtk.h>
+#include <string>
+#include "Painter.h"
 
 class CairoPainter : public Painter {
 
@@ -17,7 +18,7 @@ private:
     GtkWidget *window;
     GtkWidget *darea;
     static void onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer user_data);
-    static void putPoint(const ImagePoint &point, cairo_t *cr);
+    static void putPoint(size_t column, size_t row, const Color &color, cairo_t *cr);
 };
 
 #endif //RAYTRACER_CAIROPAINTER_H

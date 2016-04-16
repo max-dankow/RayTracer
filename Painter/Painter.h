@@ -1,18 +1,7 @@
 #ifndef RAYTRACER_PAINTER_H
 #define RAYTRACER_PAINTER_H
 
-#include <vector>
-#include <assert.h>
-#include "../Scene.h"
-
-// Представляет пиксель на картинке.
-struct ImagePoint {
-
-    ImagePoint(int x, int y, const Color &color = Color()) : x(x), y(y), color(color) { }
-
-    int x, y;
-    Color color;
-};
+#include "../Picture.h"
 
 // Интерфейс Painter предоставляет отрисовку Picture на холсте заданного рамера.
 class Painter {

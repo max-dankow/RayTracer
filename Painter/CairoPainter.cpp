@@ -12,7 +12,7 @@ void CairoPainter::onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer user_dat
     Picture *picture = (Picture *) user_data;
     for (size_t col = 0; col < picture->getWidth(); ++col) {
         for (size_t row = 0; row < picture->getHeight(); ++row) {
-            putPoint(ImagePoint((int) col, (int) row, picture->getAt(col, row)), cr);
+            putPoint(col, row, picture->getAt(col, row), cr);
         }
     }
 }
@@ -26,9 +26,12 @@ void CairoPainter::showPicture(const Picture &picture) {
     gtk_container_add(GTK_CONTAINER(window), darea);
 
     g_signal_connect(G_OBJECT(darea), "draw",
-                     G_CALLBACK(onDrawEvent), const_cast<Picture*> (&picture));
+                     G_CALLBACK(onDrawEvent),
+                     const_cast<Picture*> (&picture));
+
     g_signal_connect(window, "destroy",
-                     G_CALLBACK(gtk_main_quit), NULL);
+                     G_CALLBACK(gtk_main_quit),
+                     NULL);
 
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), screenWidth, screenHeight);
@@ -37,12 +40,12 @@ void CairoPainter::showPicture(const Picture &picture) {
     gtk_main();
 }
 
-// Рисует пиксель - ImagePoint (с указанными координатами с указанным цветом).
-void CairoPainter::putPoint(const ImagePoint &point, cairo_t *cr) {
+// Рисует пиксель с указанными координатами указанным цветом.
+void CairoPainter::putPoint(size_t column, size_t row, const Color &color, cairo_t *cr) {
     // todo: сделать scale с размерами окна.
     const size_t PIXEL_SIZE = 1;
-    cairo_set_source_rgb(cr, point.color.r, point.color.g, point.color.b);
-    cairo_rectangle(cr, point.x * PIXEL_SIZE, point.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+    cairo_set_source_rgb(cr, color.r, color.g, color.b);
+    cairo_rectangle(cr, column * PIXEL_SIZE, row * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
     cairo_fill(cr);
     cairo_stroke(cr);
 }
