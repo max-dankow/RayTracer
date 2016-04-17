@@ -21,7 +21,7 @@ Picture Scene::render() {
             Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + screenTopLeft);
             Point intersection;
             Color finalColor;
-            if (!castRay(Ray(viewPoint, pixel - viewPoint), 2, intersection, finalColor)) {
+            if (!castRay(Ray(viewPoint, pixel - viewPoint), 10, intersection, finalColor)) {
                 finalColor = backgroundColor;
             }
             picture.setAt(col, row, finalColor);
@@ -133,8 +133,9 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
         }
         Point obstacleHitPoint;
         Color obstacleColor;
-        // Если луч не прервался перпятствием, то учтем его вклад в освещенность.
-        if (!castRay(lightRay, 0, obstacleHitPoint, obstacleColor)) {
+        // Если луч не прервался перпятствием, находящимся ДО источника, то учтем его вклад в освещенность.
+        if (!castRay(lightRay, 0, obstacleHitPoint, obstacleColor)
+            || ((obstacleHitPoint - intersection).lengthSquared() > sqrDistanceToLight)) {
             double brightness = dotProduct / sqrDistanceToLight;
             totalBrightness += brightness * light->getBrightness();
         }
@@ -156,11 +157,12 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
         Ray reflectionRay(intersection, reflectionDirection);
         Point obstacleHitPoint;
         Color obstacleColor;
-        if (castRay(reflectionRay, restDepth - 1, obstacleHitPoint, obstacleColor)) {
-            // Мешаем цвета.
-            double reflectance = obstacle->getReflectance();
-            finalColor = obstacleColor * reflectance + finalColor * (1 - reflectance);
+        if (!castRay(reflectionRay, restDepth - 1, obstacleHitPoint, obstacleColor)) {
+            obstacleColor = backgroundColor;
         }
+        // Мешаем цвета.
+        double reflectance = obstacle->getReflectance();
+        finalColor = obstacleColor * reflectance + finalColor * (1 - reflectance);
     }
 #endif
 
