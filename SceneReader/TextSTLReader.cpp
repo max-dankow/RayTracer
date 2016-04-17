@@ -14,10 +14,19 @@ std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {
     // solid <name>
     input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     size_t count = 0;
+    Color color(CL_WHITE);
+    double reflectance = 0;
 
     while (!input.eof()) {
         // facet normal
         input >> word;
+        if (word == "setcolor") {
+            input >> color.r >> color.g >> color.b;
+        }
+
+        if (word == "setreflect") {
+            input >> reflectance;
+        }
 
         if (word == "facet") {
             count++;
@@ -32,13 +41,12 @@ std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {
             input >> word >> b;
             input >> word >> c;
 
-            Color color(CL_WHITE);
 //            if (count % 2 == 0) {
 //                color = Color(0.7, 0, 0);
 //            } else {
 //                color = Color(0, 0.7, 0);
 //            }
-            objects.push_back(new Triangle3d(a, b, c, color, 0.8));
+            objects.push_back(new Triangle3d(a, b, c, color, reflectance));
             // endloop
             input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             // endfacet

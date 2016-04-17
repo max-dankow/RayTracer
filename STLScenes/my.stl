@@ -1,16 +1,45 @@
 solid Snake
+  setcolor 1 0.3 0.8
+  setreflect 0.8
   facet normal 0 -1 0
    outer loop
-    vertex 2 -2 2
-    vertex -2 -2 2
-    vertex 0 4 2
+    vertex 2 -2 5
+    vertex -2 -2 5
+    vertex 0 4 5
+   endloop
+  endfacet
+  setcolor 0 1 0
+  setreflect 0
+  facet normal 0 -1 0
+   outer loop
+    vertex 1 0 -6
+    vertex 0 3 -6
+    vertex -1 0 -6
+   endloop
+  endfacet
+  setcolor 0.6 0 0
+  setreflect 0.7
+  facet normal 0 -1 0
+   outer loop
+    vertex 0 0 2
+    vertex -1 2 2
+    vertex -1.5 0 2
+   endloop
+  endfacet
+  setcolor 1 1 1
+  setreflect 0.7
+  facet normal 0 -1 0
+   outer loop
+    vertex -10 -3 -14
+    vertex -10 -3 100
+    vertex 10 -3 -14
    endloop
   endfacet
   facet normal 0 -1 0
    outer loop
-    vertex 1 -2 1.0
-    vertex -1 -2 1.0
-    vertex 0 1 1.0
+    vertex -10 -3 100
+    vertex 10 -3 100
+    vertex 10 -3 -14
    endloop
   endfacet
 endsolid Snake
