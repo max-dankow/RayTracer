@@ -43,14 +43,14 @@ Picture Scene::render() {
 }
 
 bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &finalColor) {
-    assert(restDepth >= 0); // todo: assert замедляет.
+    assert(restDepth >= 0);
     stats.rayNumber++;
 
     // Используя Kd дерево ищем пересечения со сценой.
     Object3d* obstacle = nullptr;
     std::stack<KdNode*> stack;
     KdNode* node = objects.getRoot();
-    while(true) { // todo: на втором уровне вложенности начнутся большие проблемы
+    while(true) {
         if (node->getIsLeaf()) {
             // пора считать пересечения.
             obstacle = checkIntersection(ray, intersection, node->getObjects(), finalColor);
@@ -118,7 +118,6 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
     }
 
 #ifdef ENABLE_ILLUMINATION
-
     // Расчет освещенности.
     Color hsv = rgb2hsv(finalColor);
     double totalBrightness = backgroundIllumination;
@@ -126,9 +125,10 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
         Vector3d intersectionToLight = light->getPoint() - intersection;
         Ray lightRay(intersection, intersectionToLight);
         double sqrDistanceToLight = intersectionToLight.lengthSquared();
-        double dotProduct = Vector3d::dotProduct(obstacle->getNormal(intersection), lightRay.getDirection());
-        // Отсекаем источники, находящиеся не перед поверхностью.
-        if (dotProduct <= 0 || Geometry::areDoubleEqual(sqrDistanceToLight, 0)) {
+        double dotNormalLight = Vector3d::dotProduct(obstacle->getNormal(intersection), lightRay.getDirection());
+        double dotNormalRay = Vector3d::dotProduct(obstacle->getNormal(intersection), ray.getDirection());
+        // Если луч направлен с противоположной стороны от осточника относительно примитива, то отсекаем его.
+        if (dotNormalLight * dotNormalRay >= 0 || Geometry::areDoubleEqual(sqrDistanceToLight, 0)) {
             continue;
         }
         Point obstacleHitPoint;
@@ -136,7 +136,7 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
         // Если луч не прервался перпятствием, находящимся ДО источника, то учтем его вклад в освещенность.
         if (!castRay(lightRay, 0, obstacleHitPoint, obstacleColor)
             || ((obstacleHitPoint - intersection).lengthSquared() > sqrDistanceToLight)) {
-            double brightness = dotProduct / sqrDistanceToLight;
+            double brightness = dotNormalLight / sqrDistanceToLight;
             totalBrightness += brightness * light->getBrightness();
         }
     }
@@ -148,6 +148,10 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
 #endif
 
 #ifdef ENABLE_REFLECTION
+    // todo: do in separate methods
+    if (Geometry::areDoubleEqual(obstacle->getReflectance(), 0)) {
+        return true;
+    }
     double cosRayNormal = Vector3d::dotProduct(obstacle->getNormal(intersection), ray.getDirection().normalize());
     // Если луч направлен с лицевой стороны.
     if (cosRayNormal <= 0) {
