@@ -24,8 +24,6 @@ public:
 
     virtual BoundingBox getBoundingBox() const;
 
-    virtual bool isIntersectBox(const BoundingBox &box) const;
-
     virtual ~Triangle3d() { }
 
 private:

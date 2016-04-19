@@ -47,11 +47,6 @@ public:
 
     virtual BoundingBox getBoundingBox() const;
 
-    virtual bool isIntersectBox(const BoundingBox &box) const override {
-        return getBoundingBox().intersectBox(box);
-    }
-
-
 private:
     Point center;
     double radius, radiusSquared;

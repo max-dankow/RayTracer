@@ -39,8 +39,3 @@ Color Triangle3d::getColor(const Point &point) const {
 BoundingBox Triangle3d::getBoundingBox() const {
     return BoundingBox({a, b, c});
 }
-
-bool Triangle3d::isIntersectBox(const BoundingBox &box) const {
-    // todo: вынести на другой уровень
-    return getBoundingBox().intersectBox(box);
-}

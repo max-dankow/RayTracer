@@ -55,10 +55,10 @@ void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
 
     // Распределяем объекты по поддеревьям.
     for (Object3d *pObject : node->getObjects()) {
-        if (pObject->isIntersectBox(leftBox)) {
+        if (pObject->getBoundingBox().intersectBox(leftBox)) {
             leftObjects.push_back(pObject);
         }
-        if ((pObject)->isIntersectBox(rightBox)) {
+        if ((pObject)->getBoundingBox().intersectBox(rightBox)) {
             rightObjects.push_back(pObject);
         }
     }
@@ -90,7 +90,7 @@ unsigned long KdTree::calculateNumberOfPrimitivesInBox(const std::vector<Object3
                                                        const BoundingBox &box) {
     unsigned long count = 0;
     for (const Object3d *object : objects) {
-        if (object->isIntersectBox(box)) {
+        if (object->getBoundingBox().intersectBox(box)) {
             count++;
         }
     }
