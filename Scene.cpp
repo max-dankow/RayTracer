@@ -1,9 +1,14 @@
 #include <chrono>
 #include <stack>
 #include "Scene.h"
+#include <cmath>
 
 #define ENABLE_ILLUMINATION
 #define ENABLE_REFLECTION
+
+//#define HSL_
+//#define HSV_
+#define RGB_
 
 Picture Scene::render() {
     Vector3d colVector = Vector3d(screenBottomRight.x - screenTopLeft.x,
@@ -77,9 +82,6 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
         double t_left = leftBox.intersectRay(ray);
         double t_right = rightBox.intersectRay(ray);
 
-//        std::cout << ray.getPointAt(t_left) << " = LEFT\n";
-//        std::cout << ray.getPointAt(t_right) << " = RIGHT\n";
-
         // Сначала пересекается leftBox.
         if (t_left <= t_right) {
             auto old = node;
@@ -120,7 +122,12 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
 #ifdef ENABLE_ILLUMINATION
     // Расчет освещенности.
     Color hsv = rgb2hsv(finalColor);
+    HSL hsl = RGBToHSL(RGB((unsigned char) (finalColor.r * 255),
+                           (unsigned char) (finalColor.g * 255),
+                           (unsigned char) (finalColor.b * 255)));
+    auto mem = hsl;
     double totalBrightness = backgroundIllumination;
+    double fong = 0;
     for (const LightSource* light : lights) {
         Vector3d intersectionToLight = light->getPoint() - intersection;
         Ray lightRay(intersection, intersectionToLight);
@@ -136,15 +143,40 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &intersection, Color &f
         // Если луч не прервался перпятствием, находящимся ДО источника, то учтем его вклад в освещенность.
         if (!castRay(lightRay, 0, obstacleHitPoint, obstacleColor)
             || ((obstacleHitPoint - intersection).lengthSquared() > sqrDistanceToLight)) {
-            double brightness = dotNormalLight / sqrDistanceToLight;
-            totalBrightness += brightness * light->getBrightness();
+            double brightness = dotNormalLight /*/ sqrDistanceToLight*/;
+            // Модель Фонга.
+            auto rrey = lightRay.getDirection() * -1;
+            double cosRayNormal = fabs(Vector3d::dotProduct(obstacle->getNormal(intersection),
+                                                            (rrey).normalize()));
+            Vector3d reflectionDirection(((obstacle->getNormal(intersection) * cosRayNormal) + rrey) * 2 - rrey);
+            assert(Geometry::areDoubleEqual(cosRayNormal, Vector3d::dotProduct(reflectionDirection.normalize(), obstacle->getNormal(intersection))));
+            double fongCos = std::max(-Vector3d::dotProduct(reflectionDirection, ray.getDirection()), 0.);
+//            std::cout << fongCos << "\n";
+            fong = std::pow(fongCos, 8);
+            totalBrightness += (brightness * 0.5 + fong * 0.5) * light->getBrightness();
+//            totalBrightness += (brightness * 1 + fong * 0) * light->getBrightness();
         }
+    }
+    hsl.L *= (float) totalBrightness;
+    if (hsl.L > mem.L) {
+        hsl.L = mem.L;
     }
     hsv.v *= totalBrightness;
     if (hsv.v > 1) {
         hsv.v = 1;
     }
+#ifdef RGB_
+    finalColor = finalColor * totalBrightness;
+#endif
+#ifdef HSV_
     finalColor = hsv2rgb(hsv);
+#endif
+#ifdef HSL_
+    auto rgb = HSLToRGB(hsl);
+    finalColor.r = ((double)rgb.R) / 255;
+    finalColor.g = ((double)rgb.G) / 255;
+    finalColor.b = ((double)rgb.B) / 255;
+#endif
 #endif
 
 #ifdef ENABLE_REFLECTION

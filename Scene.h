@@ -17,6 +17,7 @@ struct Statistics {
     unsigned long rayNumber;
 };
 // todo: устранить безобразие с памятью!
+// проблема с памятью не такая простая, нужно неуменьшая производительности делегировать кому-то ответсвенность по удалению.
 class Scene {
 public:
 
@@ -26,14 +27,14 @@ public:
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
           const std::vector<Object3d*> &objects,
-          std::vector<LightSource*> &&lights) :
+          std::vector<LightSource*> &lights) :
             viewPoint(viewPoint),
             screenTopLeft(screenTopLeft),
             screenBottomRight(screenBottomRight),
             pixelNumberWidth(pixelNumberWidth),
             pixelNumberHeight(pixelNumberHeight),
             objects(objects),
-            lights(std::move(lights)){ }
+            lights(lights){ }
 
     Picture render();
 
@@ -42,8 +43,9 @@ public:
 private:
     bool castRay(const Ray &ray, int restDepth, Point &intersection, Color &finalColor);
 
-    Object3d *checkIntersection(const Ray &ray, Point &intersection, const std::vector<Object3d *> objectList,
-                                    Color &color);
+    Object3d *checkIntersection(const Ray &ray, Point &intersection,
+                                const std::vector<Object3d *> objectList,
+                                Color &color);
 
     // Точка камеры.
     Point viewPoint;
