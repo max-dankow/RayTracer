@@ -1,11 +1,7 @@
 #include "Triangle3d.h"
 
 Triangle3d::Triangle3d(const Point &a, const Point &b, const Point &c,
-                       const Color &color, double reflectance, double transparency) : Object3d(0.7, transparency),
-        a(a), b(b), c(c), color(color), reflectance(reflectance) {
-    assert(reflectance >= 0 && reflectance <= 1);
-    refractiveCoef = 1;
-
+                       const Material &material) : Object3d(material), a(a), b(b), c(c) {
     ab = Vector3d(a, b);
     bc = Vector3d(b, c);
     ca = Vector3d(c, a);
@@ -35,8 +31,8 @@ bool Triangle3d::intersectRay(const Ray &ray, Point &intersection) const {
     return false;
 }
 
-Color Triangle3d::getColor(const Point &point) const {
-    return color;
+Color Triangle3d::getColorAt(const Point &point) const {
+    return material.color;
 }
 
 BoundingBox Triangle3d::getBoundingBox() const {

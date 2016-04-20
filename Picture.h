@@ -58,6 +58,9 @@ private:
 // todo: переписать нормально
 static const Color CL_WHITE = Color(1, 1, 1);
 static const Color CL_BLACK = Color(0, 0, 0);
+static const Color CL_RED = Color(1, 0, 0);
+static const Color CL_GREEN = Color(0, 1, 0);
+static const Color CL_BLUE = Color(0, 0, 1);
 /*
 typedef struct {
     double r;       // percent

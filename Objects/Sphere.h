@@ -9,15 +9,11 @@
 class Sphere : public Object3d{
 public:
 
-    Sphere() : Object3d(1, 0) {}
+    Sphere(const Material &material) : Object3d(material) {}
 
-    Sphere(const Point &center, double radius,
-           const Color &color, double reflectance) : Object3d(1, 0),
-            center(center), radius(radius), radiusSquared(radius * radius),
-            color(color), reflectance(reflectance) {
+    Sphere(const Point &center, double radius, const Material &material) : Object3d(material),
+            center(center), radius(radius), radiusSquared(radius * radius) {
         assert(radius > 0 && !Geometry::areDoubleEqual(radius, 0));
-        refractiveCoef = 1/1.5;
-        transparency = 0.5;
     }
 
     const Point &getCenter() const {
@@ -33,7 +29,7 @@ public:
     }
 
     virtual double getReflectance() const {
-        return reflectance;
+        return material.reflectance;
     }
 
     virtual Vector3d getNormal(const Point &point) const {
@@ -41,8 +37,8 @@ public:
         return Vector3d(point - center).normalize();
     }
 
-    virtual Color getColor(const Point &point) const {
-        return color;
+    virtual Color getColorAt(const Point &point) const {
+        return material.color;
     }
 
     virtual bool intersectRay(const Ray &ray, Point &intersection) const;
@@ -52,8 +48,6 @@ public:
 private:
     Point center;
     double radius, radiusSquared;
-    Color color;
-    double reflectance;
 };
 
 

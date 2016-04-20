@@ -46,7 +46,7 @@ std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {
 //            } else {
 //                color = Color(0, 0.7, 0);
 //            }
-            objects.push_back(new Triangle3d(a, b, c, color, reflectance));
+            objects.push_back(new Triangle3d(a, b, c, Material(color, reflectance)));
             // endloop
             input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             // endfacet

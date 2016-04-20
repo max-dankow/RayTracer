@@ -7,8 +7,7 @@
 #include "../Geometry/Ray.h"
 #include "../Geometry/BoundingBox.h"
 
-class Material {
-public:
+struct Material {
 
     Material(const Color &color = CL_WHITE, double reflectance = 0,
              double refractiveIndex = 1, double transparency = 0,
@@ -17,15 +16,16 @@ public:
             refractiveIndex(refractiveIndex),
             transparency(transparency),
             lambert(lambert), phong(phong),
-            phongPower(phongPower) { }
+            phongPower(phongPower) {
 
-private:
-    Color color;
-    double reflectance;
-    double refractiveIndex;
-    double transparency;
-    double lambert;
-    double phong, phongPower;
+    }
+
+    const Color color;
+    const double reflectance;
+    const double refractiveIndex;
+    const double transparency;
+    const double lambert;
+    const double phong, phongPower;
 };
 
 // Интерфейс представляет обобщенный объект сцены.
@@ -35,11 +35,18 @@ public:
     Object3d(const Material &material) : material(material) { }
 
     virtual Vector3d getNormal(const Point &) const = 0;
+
     virtual bool intersectRay(const Ray &, Point &intersection) const = 0;
-    virtual Color getColor(const Point &point) const = 0;
-    virtual double getReflectance() const = 0;
+
+    virtual Color getColorAt(const Point &point) const = 0;
+
     virtual BoundingBox getBoundingBox() const = 0;
+
     virtual ~Object3d() {}
+
+    const Material &getMaterial() const {
+        return material;
+    }
 
 protected:
     Material material;

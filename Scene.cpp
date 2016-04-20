@@ -14,8 +14,8 @@ Picture Scene::render() {
     auto startTime = std::chrono::steady_clock::now();
 
     std::cout << "Start rendering scene...\n";
-    for (size_t col = 0; col < pixelNumberWidth; ++col) {
-        for (size_t row = 0; row < pixelNumberHeight; ++row) {
+    for (size_t col = /*400*/0; col < pixelNumberWidth; ++col) {
+        for (size_t row = 0/*180*/; row < pixelNumberHeight; ++row) {
             // Смещаем 0.5 чтобы попасть в серединку пикселя.
             Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + screenTopLeft);
             Point intersection;
@@ -40,7 +40,9 @@ Picture Scene::render() {
 }
 
 bool Scene::castRay(const Ray &ray, int restDepth, Point &hitPoint, Color &finalColor) {
-    assert(restDepth >= 0);
+    if (restDepth <= 0) {
+        return false;
+    }
 
     // Используя Kd дерево ищем пересечения со сценой.
     Object3d *obstacle = findObstacle(ray, hitPoint, finalColor);
@@ -49,11 +51,12 @@ bool Scene::castRay(const Ray &ray, int restDepth, Point &hitPoint, Color &final
     if (obstacle == nullptr) {
         return false;
     }
-    if (restDepth == 0) {
-        return true;
-    }
-    finalColor = computeDiffuseColor(obstacle, hitPoint, ray) * (1 - obstacle->getReflectance())
-                 + computeReflectionColor(obstacle, hitPoint, ray, restDepth) * obstacle->getReflectance();
+    auto obstacleMaterial = obstacle->getMaterial();
+    double surface = 1 - obstacleMaterial.reflectance - obstacleMaterial.transparency;
+    surface = std::max(0., surface);
+    finalColor = computeDiffuseColor(obstacle, hitPoint, ray) * surface
+                 + computeReflectionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial.reflectance
+                 + computeRefractionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial.transparency;
     return true;
 }
 
@@ -127,6 +130,7 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
         if (dotNormalLight * dotNormalRay >= 0 || Geometry::areDoubleEqual(sqrDistanceToLight, 0)) {
             continue;
         }
+        lightRay.push();
 
         Point obstacleHitPoint;
         Color obstacleColor;
@@ -139,7 +143,7 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
             totalBrightness += brightness * light->getBrightness();
         }
     }
-    return object->getColor(point) * totalBrightness;
+    return object->getColorAt(point) * totalBrightness;
 }
 
 Vector3d Scene::reflectRay(const Vector3d &direction, const Vector3d &normal) {
@@ -156,7 +160,7 @@ Vector3d Scene::reflectRay(const Vector3d &direction, const Vector3d &normal) {
 }
 
 Color Scene::computeReflectionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth) {
-    if (Geometry::areDoubleEqual(object->getReflectance(), 0)) {
+    if (Geometry::areDoubleEqual(object->getMaterial().reflectance, 0)) {
         return CL_BLACK;
     }
     // Если имеет место отражение, продолжаем.
@@ -174,20 +178,23 @@ Color Scene::computeReflectionColor(Object3d *object, const Point &point, const 
 Color Scene::computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth) {
     Vector3d refractionDirection = refractRay(viewRay.getDirection(),
                                               object->getNormal(point),
-                                              object->getRefractiveCoef());
+                                              object->getMaterial().refractiveIndex);
     // Если имеет место преломление, продолжаем.
     if (!Vector3d::isNullVector(refractionDirection)) {
         Ray refractionRay(point, refractionDirection);
         refractionRay.push();
         Point obstacleHitPoint;
-        Color obstacleColor = backgroundColor;
-        castRay(refractionRay, restDepth - 1, obstacleHitPoint, obstacleColor);
+        Color obstacleColor;
+        if (!castRay(refractionRay, restDepth - 1, obstacleHitPoint, obstacleColor)) {
+            obstacleColor = backgroundColor;
+        }
         return obstacleColor;
     }
     return CL_BLACK;
 }
 
 Vector3d Scene::refractRay(const Vector3d &direction, const Vector3d &normal, double q) {
+    // todo : явно описать необходимость нормализации.
     if (Geometry::areDoubleEqual(q, 0)) {
         return Vector3d(0, 0, 0);
     }
@@ -201,7 +208,7 @@ Vector3d Scene::refractRay(const Vector3d &direction, const Vector3d &normal, do
     if (sinThetaSqr > 1) {
         return Vector3d(0, 0, 0);
     }
-    return direction * q + normal * (q * cosRayNormal - sqrt(1 - sinThetaSqr));
+    return direction.normalize() * q - normal * (q * cosRayNormal + sqrt(1 - sinThetaSqr));
 }
 
 
@@ -221,7 +228,7 @@ Object3d *Scene::checkIntersection(const Ray &ray,
                 object->intersectRay(ray, thisIntersection);
                 intersection = thisIntersection;
                 obstacle = object;
-                color = obstacle->getColor(intersection);
+                color = obstacle->getColorAt(intersection);
             }
         }
     }
