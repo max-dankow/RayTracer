@@ -75,6 +75,14 @@ struct Vector3d {
         return !(*this == other);
     }
 
+    static Vector3d nullVector() {
+        return Vector3d(0, 0, 0);
+    }
+
+    static bool isNullVector(const Vector3d &vector) {
+        return vector == Vector3d(0, 0, 0);
+    }
+
     bool totallyLessEqualThan(const Vector3d &other) const {
         return ((this->x < other.x || Geometry::areDoubleEqual(this->x, other.x))
                 && (this->y < other.y || Geometry::areDoubleEqual(this->y, other.y))

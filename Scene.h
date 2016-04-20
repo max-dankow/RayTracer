@@ -12,10 +12,6 @@
 
 using std::unique_ptr;
 
-struct Statistics {
-    unsigned long intersectionAttemptCount;
-    unsigned long rayNumber;
-};
 // todo: устранить безобразие с памятью!
 class Scene {
 public:
@@ -40,10 +36,18 @@ public:
 //    void emplaceObject(Object3d *object);
 
 private:
-    bool castRay(const Ray &ray, int restDepth, Point &intersection, Color &finalColor);
+    bool castRay(const Ray &ray, int restDepth, Point &hitPoint, Color &finalColor);
 
-    Object3d *checkIntersection(const Ray &ray, Point &intersection, const std::vector<Object3d *> objectList,
-                                    Color &color);
+    Object3d *checkIntersection(const Ray &ray,
+                                const std::vector<Object3d *> objectList,
+                                Point &intersection, Color &color);
+
+    Object3d * findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleColor);
+    Color computeDiffuseColor(Object3d *object, const Point &point, const Ray &viewRay);
+    Color computeReflectionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
+    Color computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
+    static Vector3d refractRay(const Vector3d &direction, const Vector3d &normal, double q);
+    static Vector3d reflectRay(const Vector3d &direction, const Vector3d &normal);
 
     // Точка камеры.
     Point viewPoint;
@@ -61,8 +65,6 @@ private:
     KdTree objects;
     // Указатели на все источники освещения, так же хранимые в куче.
     std::vector<LightSource*> lights;
-
-    Statistics stats;
 };
 
 

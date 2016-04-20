@@ -22,7 +22,6 @@ public:
 
     static constexpr double INFINITY_DOUBLE = std::numeric_limits<double>::infinity();
 
-private:
     static constexpr double PRECISION = 1e-6;
 };
 

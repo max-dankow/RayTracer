@@ -9,13 +9,15 @@
 class Sphere : public Object3d{
 public:
 
-    Sphere() {}
+    Sphere() : Object3d(1, 0) {}
 
     Sphere(const Point &center, double radius,
-           const Color &color, double reflectance) :
+           const Color &color, double reflectance) : Object3d(1, 0),
             center(center), radius(radius), radiusSquared(radius * radius),
             color(color), reflectance(reflectance) {
         assert(radius > 0 && !Geometry::areDoubleEqual(radius, 0));
+        refractiveCoef = 1/1.5;
+        transparency = 0.5;
     }
 
     const Point &getCenter() const {

@@ -10,7 +10,8 @@
 class Triangle3d : public Object3d {
 public:
 
-    Triangle3d(const Point &a, const Point &b, const Point &c, const Color &color = CL_WHITE, double reflectance = 0);
+    Triangle3d(const Point &a, const Point &b, const Point &c, const Color &color, double reflectance,
+                   double transparency);
 
     virtual Vector3d getNormal(const Point &point) const;
 

@@ -50,6 +50,10 @@ public:
         }
     }
 
+    void push() {
+        origin = origin + direction.normalize() * Geometry::PRECISION   ;
+    }
+
 private:
     Point origin;
     Vector3d direction;
