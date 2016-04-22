@@ -10,9 +10,6 @@
 #include "LightSource.h"
 #include "KdTree.h"
 
-using std::unique_ptr;
-
-// todo: устранить безобразие с памятью!
 class Scene {
 public:
 
@@ -21,7 +18,7 @@ public:
           const Point &screenBottomRight,
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
-          const std::vector<Object3d*> &objects,
+          std::vector<Object3d*> &&objects,
           std::vector<LightSource*> &&lights) :
             viewPoint(viewPoint),
             screenTopLeft(screenTopLeft),
@@ -29,17 +26,32 @@ public:
             pixelNumberWidth(pixelNumberWidth),
             pixelNumberHeight(pixelNumberHeight),
             objects(objects),
+            objectList(std::move(objects)),
             lights(std::move(lights)){ }
+
+    ~Scene() {
+        for (LightSource *light : lights) {
+            delete (light);
+        }
+        for (Object3d *object : objectList) {
+            delete (object);
+        }
+    }
 
     Picture render();
 
-//    void emplaceObject(Object3d *object);
+    static std::vector<Object3d *> &mergeObjects(std::vector<Object3d *> &base,
+                                                 std::vector<Object3d *> &&other) {
+        std::move(other.begin(), other.end(), std::back_inserter(base));
+        other.clear();
+        return base;
+    }
 
 private:
     bool castRay(const Ray &ray, int restDepth, Point &hitPoint, Color &finalColor);
 
     Object3d *checkIntersection(const Ray &ray,
-                                const std::vector<Object3d *> objectList,
+                                std::vector<Object3d *> objectList,
                                 Point &intersection, Color &color);
 
     Object3d * findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleColor);
@@ -59,10 +71,11 @@ private:
 
     size_t pixelNumberWidth, pixelNumberHeight;
     Color backgroundColor = CL_BLACK;
-    double backgroundIllumination = 0.025;
+    double backgroundIllumination = 0.1;
 
     // Kd дерево указателей на все объекты сцены, хранимые в куче.
     KdTree objects;
+    std::vector<Object3d*> objectList;
     // Указатели на все источники освещения, так же хранимые в куче.
     std::vector<LightSource*> lights;
 };

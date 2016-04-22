@@ -2,10 +2,6 @@
 #include <stack>
 #include "Scene.h"
 
-//#define ENABLE_ILLUMINATION
-//#define ENABLE_REFLECTION
-//#define ENABLE_REFRACTION
-
 Picture Scene::render() {
     Vector3d colVector = Vector3d(screenBottomRight.x - screenTopLeft.x,
                                   0, screenBottomRight.z - screenTopLeft.z) / pixelNumberWidth;
@@ -120,6 +116,7 @@ Object3d *Scene::findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleCo
 Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray &viewRay) {
     double totalBrightness = backgroundIllumination;
     double dotNormalRay = Vector3d::dotProduct(object->getNormal(point), viewRay.getDirection());
+    auto material = object->getMaterial();
     for (const LightSource *light : lights) {
         Vector3d lightDirection(point, light->getPoint());
         Ray lightRay(point, lightDirection);
@@ -139,8 +136,15 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
         if (obstacle == nullptr
             || ((obstacleHitPoint - point).lengthSquared() > sqrDistanceToLight)
             || (obstacleHitPoint == light->getPoint())) {
-            double brightness = dotNormalLight / sqrDistanceToLight;
-            totalBrightness += brightness * light->getBrightness();
+            Vector3d lightReflectedDirection = reflectRay(lightDirection * -1, object->getNormal(point));
+            double fong = 0;
+            if (!Vector3d::isNullVector(lightReflectedDirection)) {
+                double fongCos = std::max(-Vector3d::dotProduct(lightReflectedDirection, viewRay.getDirection()), 0.);
+                fong = std::pow(fongCos, material.phongPower);
+            }
+            double brightness = dotNormalLight;
+            totalBrightness += (brightness * material.lambert + fong * material.phong)
+                               * light->getBrightness() / sqrDistanceToLight;
         }
     }
     return object->getColorAt(point) * totalBrightness;
@@ -194,7 +198,6 @@ Color Scene::computeRefractionColor(Object3d *object, const Point &point, const 
 }
 
 Vector3d Scene::refractRay(const Vector3d &direction, const Vector3d &normal, double q) {
-    // todo : явно описать необходимость нормализации.
     if (Geometry::areDoubleEqual(q, 0)) {
         return Vector3d(0, 0, 0);
     }
@@ -223,7 +226,7 @@ Object3d *Scene::checkIntersection(const Ray &ray,
         if (object->intersectRay(ray, thisIntersection)) {
             double sqrDistance = (thisIntersection - ray.getOrigin()).lengthSquared();
             if ((obstacle == nullptr || sqrDistance < minSqrDistance)
-                && !Geometry::areDoubleEqual(sqrDistance, 0)) { //todo : push ray or this?
+                && !Geometry::areDoubleEqual(sqrDistance, 0)) {
                 minSqrDistance = sqrDistance;
                 object->intersectRay(ray, thisIntersection);
                 intersection = thisIntersection;
