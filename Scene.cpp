@@ -2,7 +2,10 @@
 #include <stack>
 #include "Scene.h"
 
+#define FIND_ALIASING
+
 Picture Scene::render() {
+    const size_t scale = 4;
     Vector3d colVector = Vector3d(screenBottomRight.x - screenTopLeft.x,
                                   0, screenBottomRight.z - screenTopLeft.z) / pixelNumberWidth;
     Vector3d rowVector = Vector3d(0, screenBottomRight.y - screenTopLeft.y, 0) / pixelNumberHeight;
@@ -15,45 +18,86 @@ Picture Scene::render() {
             // Смещаем 0.5 чтобы попасть в серединку пикселя.
             Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + screenTopLeft);
             Point intersection;
-            Color finalColor;
-            if (!castRay(Ray(viewPoint, pixel - viewPoint), 10, intersection, finalColor)) {
-                finalColor = backgroundColor;
-            }
-            picture.setAt(col, row, finalColor);
+            auto color = computeRayColor(Ray(viewPoint, pixel - viewPoint), MAX_DEPTH, intersection);
+            picture.setAt(col, row, color);
         }
         // Отображение прогресса.
-        if (col == pixelNumberWidth - 1 || col % 10 == 0) {
+        if (col == pixelNumberWidth - 1 || col % 5 == 0) {
             std::cout << '\r' << "Rendering " << 100 * col / pixelNumberWidth << "%";
             std::cout.flush();
         }
     }
+    int count = 0;
+    Picture newPic(pixelNumberWidth, pixelNumberHeight);
+#ifdef FIND_ALIASING
+    std::cout << "\nRunning Adaptive Anti Aliasing..." << "\n";
+    // Выделение ступенчатых учатсков.
+    for (size_t col = /*400*/1; col < pixelNumberWidth - 1; ++col) {
+        for (size_t row = 1/*180*/; row < pixelNumberHeight -1; ++row) {
+            Color ignoreColor;
+            if (!isColorPreciseEnough({picture.getAt(col, row),
+                                      picture.getAt(col + 1, row),
+                                      picture.getAt(col, row + 1),
+                                      picture.getAt(col - 1, row),
+                                      picture.getAt(col, row - 1)}, ignoreColor)) {
+                Point newTopLeft(colVector * col + rowVector * row + screenTopLeft);
+                Point newBottomRight(colVector * (col + 1) + rowVector * (row + 1) + screenTopLeft);
+                newPic.setAt(col, row, mixSubPixels(newTopLeft, newBottomRight, 0));
+//                newPic.setAt(col, row, picture.getAt(col, row));
+//                newPic.setAt(col, row, CL_RED);
+                count++;
+            } else {
+                newPic.setAt(col, row, picture.getAt(col, row));
+            }
+            // Отображение прогресса.
+            if (col == pixelNumberWidth - 1 || col % 20 == 0) {
+                std::cout << '\r' << "Rendering " << 100 * col / pixelNumberWidth << "%";
+                std::cout.flush();
+            }
+        }
+    }
+#endif  // FIND_ALIASING
+    std::cout << "Bad are " << count << " of " << pixelNumberWidth * pixelNumberHeight << "\n";
     auto endTime = std::chrono::steady_clock::now();
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
     std::cout << "\nRendering finished\n"
     << "Total time " << workTime.count() / 60 << "m "
     << workTime.count() % 60 << "s\n";
-    return picture;
+    return newPic;
 }
 
-bool Scene::castRay(const Ray &ray, int restDepth, Point &hitPoint, Color &finalColor) {
+const Color Scene::computeRayColor(const Ray &ray, int restDepth, Point &hitPoint) {
+//    static  int cuts = 0;
+    if (ray.getPower() <= Ray::INSIGNIFICANT) {
+//        std::cerr << ++cuts << " CUT\n";
+        return CL_BLACK;
+    }
+//    if (restDepth <  5) {
+//        std::cout << "!";
+//        if (restDepth <  2) {
+//            std::cout << "!!";
+//        }
+//        std::cout << "\n";
+//    }
     if (restDepth <= 0) {
         return false;
     }
+    Color finalColor;
 
     // Используя Kd дерево ищем пересечения со сценой.
     Object3d *obstacle = findObstacle(ray, hitPoint, finalColor);
 
     // Если не нашли пересечений.
     if (obstacle == nullptr) {
-        return false;
+        return backgroundColor;
     }
     auto obstacleMaterial = obstacle->getMaterial();
     double surface = 1 - obstacleMaterial.reflectance - obstacleMaterial.transparency;
-    surface = std::max(0., surface);
+    surface = std::max(0., surface);//todo
     finalColor = computeDiffuseColor(obstacle, hitPoint, ray) * surface
                  + computeReflectionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial.reflectance
                  + computeRefractionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial.transparency;
-    return true;
+    return finalColor;
 }
 
 Object3d *Scene::findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleColor) {
@@ -167,31 +211,31 @@ Color Scene::computeReflectionColor(Object3d *object, const Point &point, const 
     if (Geometry::areDoubleEqual(object->getMaterial().reflectance, 0)) {
         return CL_BLACK;
     }
+
     // Если имеет место отражение, продолжаем.
     Vector3d reflectionDirection = reflectRay(viewRay.getDirection(), object->getNormal(point));
     if (!Vector3d::isNullVector(reflectionDirection)) {
-        Ray reflectionRay(point, reflectionDirection);
+        Ray reflectionRay(point, reflectionDirection, (float) (viewRay.getPower() * object->getMaterial().reflectance));
         Point obstacleHitPoint;
-        Color obstacleColor = backgroundColor;
-        castRay(reflectionRay, restDepth - 1, obstacleHitPoint, obstacleColor);
+        Color obstacleColor = computeRayColor(reflectionRay, restDepth - 1, obstacleHitPoint);
         return obstacleColor;
     }
     return CL_BLACK;
 }
 
 Color Scene::computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth) {
+    if (Geometry::areDoubleEqual(object->getMaterial().transparency, 0)) {
+        return CL_BLACK;
+    }
     Vector3d refractionDirection = refractRay(viewRay.getDirection(),
                                               object->getNormal(point),
                                               object->getMaterial().refractiveIndex);
     // Если имеет место преломление, продолжаем.
     if (!Vector3d::isNullVector(refractionDirection)) {
-        Ray refractionRay(point, refractionDirection);
+        Ray refractionRay(point, refractionDirection, (float) (viewRay.getPower() * object->getMaterial().transparency));
         refractionRay.push();
         Point obstacleHitPoint;
-        Color obstacleColor;
-        if (!castRay(refractionRay, restDepth - 1, obstacleHitPoint, obstacleColor)) {
-            obstacleColor = backgroundColor;
-        }
+        Color obstacleColor = computeRayColor(refractionRay, restDepth - 1, obstacleHitPoint);
         return obstacleColor;
     }
     return CL_BLACK;

@@ -5,12 +5,13 @@
 #include <cstdlib>
 #include <vector>
 #include <limits>
+#include <iostream>
 
 // todo: инкаплусировать всю работу с цветами в классе
 // Представляет цвет в формате RGB каждая компонента - насыщенность от 0 до 1.
 struct Color {
     Color(double r = 0, double g = 0, double b = 0) : r(r), g(g), b(b) {
-        assert(r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1);
+//        assert(r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1);
     }
 
     Color operator*(double k) {
@@ -18,7 +19,9 @@ struct Color {
     }
 
     Color operator+(const Color &other) {
-        return Color(std::min(this->r + other.r, 1.), std::min(this->g + other.g, 1.), std::min(this->b + other.b, 1.));
+        return Color(std::min(this->r + other.r, 1.),
+                     std::min(this->g + other.g, 1.),
+                     std::min(this->b + other.b, 1.));
     }
 
     double r, g, b;
@@ -29,6 +32,9 @@ class Picture {
 public:
     explicit Picture(size_t width, size_t height) : width(width), height(height) {
         colorMap.assign(width * height, Color());
+    }
+
+    explicit Picture() : width(0), height(0) {
     }
 
     const Color &getAt(size_t col, size_t row) const {
@@ -49,18 +55,23 @@ public:
         return width;
     }
 
+    const std::vector<Color> &getColorMap() const {
+        return colorMap;
+    }
+
+    Picture mutiSempleAntiAliasing(size_t sampleNumber);
+
 private:
     size_t width, height;
     std::vector<Color> colorMap;
 };
 
-// todo: исправить на hsl
-// todo: переписать нормально
 static const Color CL_WHITE = Color(1, 1, 1);
 static const Color CL_BLACK = Color(0, 0, 0);
 static const Color CL_RED = Color(1, 0, 0);
 static const Color CL_GREEN = Color(0, 1, 0);
 static const Color CL_BLUE = Color(0, 0, 1);
+//static const Color CL_UNDEFINED = Color(-1, -1, -1);
 /*
 typedef struct {
     double r;       // percent
@@ -73,7 +84,7 @@ typedef struct {
     double s;       // percent
     double v;       // percent
 } hsv;*/
-
+/*
 static Color   rgb2hsv(Color in);
 static Color   hsv2rgb(Color in);
 
@@ -179,5 +190,5 @@ Color hsv2rgb(Color in)
     }
     return out;
 }
-
+*/
 #endif //RAYTRACER_PICTURE_H

@@ -18,8 +18,8 @@ public:
           const Point &screenBottomRight,
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
-          std::vector<Object3d*> &&objects,
-          std::vector<LightSource*> &&lights) :
+          std::vector<Object3d *> &&objects,
+          std::vector<LightSource *> &&lights) :
             viewPoint(viewPoint),
             screenTopLeft(screenTopLeft),
             screenBottomRight(screenBottomRight),
@@ -27,7 +27,7 @@ public:
             pixelNumberHeight(pixelNumberHeight),
             objects(objects),
             objectList(std::move(objects)),
-            lights(std::move(lights)){ }
+            lights(std::move(lights)) { }
 
     ~Scene() {
         for (LightSource *light : lights) {
@@ -48,18 +48,89 @@ public:
     }
 
 private:
-    bool castRay(const Ray &ray, int restDepth, Point &hitPoint, Color &finalColor);
+    const Color computeRayColor(const Ray &ray, int restDepth, Point &hitPoint);
 
     Object3d *checkIntersection(const Ray &ray,
                                 std::vector<Object3d *> objectList,
                                 Point &intersection, Color &color);
 
-    Object3d * findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleColor);
+    Object3d *findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleColor);
+
     Color computeDiffuseColor(Object3d *object, const Point &point, const Ray &viewRay);
+
     Color computeReflectionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
+
     Color computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
+
     static Vector3d refractRay(const Vector3d &direction, const Vector3d &normal, double q);
+
     static Vector3d reflectRay(const Vector3d &direction, const Vector3d &normal);
+
+    Color mixColors(const std::vector<Color> &neighbors) {
+        double r = 0, g = 0, b = 0;
+        for (Color color : neighbors) {
+            r += color.r;
+            g += color.g;
+            b += color.b;
+        }
+        r /= neighbors.size();
+        g /= neighbors.size();
+        b /= neighbors.size();
+        return Color(r, g, b);
+    }
+
+    bool isColorPreciseEnough(const std::vector<Color> &neighbors, Color &mixedColor) {
+        const double COLOR_PRECISION = 0.02;
+        mixedColor = mixColors(neighbors);
+
+        for (Color color : neighbors) {
+            double distance = (mixedColor.r - color.r) * (mixedColor.r - color.r)
+                              + (mixedColor.g - color.g) * (mixedColor.g - color.g)
+                              + (mixedColor.b - color.b) * (mixedColor.b - color.b);
+            if (distance > COLOR_PRECISION * COLOR_PRECISION) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    Color mixSubPixels(const Point &topLeft, const Point &bottomRight, int depth) {
+        const size_t AAScale = 4;
+        Vector3d colVector = Vector3d(bottomRight.x - topLeft.x,
+                                      0, bottomRight.z - topLeft.z) / AAScale;
+        Vector3d rowVector = Vector3d(0, bottomRight.y - topLeft.y, 0) / AAScale;
+//        Picture picture(AAScale, AAScale);
+        std::vector<Color> colors;
+//        Color picture[2][2];
+
+        for (size_t col = 0; col < AAScale; ++col) {
+            for (size_t row = 0; row < AAScale; ++row) {
+                // Смещаем 0.5 чтобы попасть в серединку пикселя.
+                Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + topLeft);
+                Point intersection;
+                auto color = computeRayColor(Ray(viewPoint, pixel - viewPoint), MAX_DEPTH, intersection);
+//                picture.setAt(col, row,color);
+                colors.push_back(color);
+            }
+        }
+//        Color localColor;
+//        bool enough = isColorPreciseEnough(picture.getColorMap(), localColor);
+//
+//        if (!enough && (depth < 0)) {
+//
+//            for (size_t col = 0; col < AAScale; ++col) {
+//                for (size_t row = 0; row < AAScale; ++row) {
+//                    Point newTopLeft(colVector * col + rowVector * row + topLeft);
+//                    Point newBottomRight(colVector * (col + 1) + rowVector * (row + 1) + topLeft);
+//                    picture.setAt(col, row, mixSubPixels(newTopLeft, newBottomRight, depth + 1));
+//                }
+//            }
+//            localColor = mixColors(picture.getColorMap());
+//        }
+        return mixColors(colors);
+    }
+
+    static const int MAX_DEPTH = 10;
 
     // Точка камеры.
     Point viewPoint;
@@ -75,9 +146,9 @@ private:
 
     // Kd дерево указателей на все объекты сцены, хранимые в куче.
     KdTree objects;
-    std::vector<Object3d*> objectList;
+    std::vector<Object3d *> objectList;
     // Указатели на все источники освещения, так же хранимые в куче.
-    std::vector<LightSource*> lights;
+    std::vector<LightSource *> lights;
 };
 
 

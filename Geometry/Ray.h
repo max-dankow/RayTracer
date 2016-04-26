@@ -9,7 +9,8 @@ public:
 
     Ray() { }
 
-    Ray(const Point &origin, const Vector3d &direction) : origin(origin), direction(direction.normalize()) { }
+    Ray(const Point &origin, const Vector3d &direction, float power = 1) :
+            origin(origin), direction(direction.normalize()),  power(power){ }
 
     const Point &getOrigin() const {
         return origin;
@@ -54,9 +55,16 @@ public:
         origin = origin + direction.normalize() * Geometry::PRECISION   ;
     }
 
+
+    float getPower() const {
+        return power;
+    }
+
+    static constexpr float INSIGNIFICANT = (const float) (1. / 256.);
 private:
     Point origin;
     Vector3d direction;
+    float power;
 };
 
 #endif //RAYTRACER_RAY_H
