@@ -15,11 +15,11 @@ struct Color {
 //        assert(r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1);
     }
 
-    Color operator*(double k) {
+    Color operator*(double k) const {
         return Color(std::min(r * k, 1.), std::min(g * k, 1.), std::min(b * k, 1.));
     }
 
-    Color operator+(const Color &other) {
+    Color operator+(const Color &other) const {
         return Color(std::min(this->r + other.r, 1.),
                      std::min(this->g + other.g, 1.),
                      std::min(this->b + other.b, 1.));
@@ -36,6 +36,17 @@ public:
     }
 
     explicit Picture() : width(0), height(0) {
+    }
+
+    Picture &operator=(Picture &&other) {
+        this->colorMap = std::move(other.getColorMap());
+        this->height = other.getHeight();
+        this->width = other.getWidth();
+        return *this;
+    }
+
+    Picture(Picture &&other) {
+        *this = std::move(other);
     }
 
     const Color &getAt(size_t col, size_t row) const {

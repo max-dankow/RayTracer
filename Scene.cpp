@@ -1,8 +1,10 @@
 #include <chrono>
 #include <stack>
+#include <thread>
 #include "Scene.h"
 
-#define FIND_ALIASING
+#define ENABLE_ANTIALIASING
+//#define HIGHLIGHT_ALIASING
 
 Picture Scene::render() {
     Vector3d colVector = Vector3d(screenBottomRight.x - screenTopLeft.x,
@@ -10,71 +12,88 @@ Picture Scene::render() {
     Vector3d rowVector = Vector3d(0, screenBottomRight.y - screenTopLeft.y, 0) / pixelNumberHeight;
     Picture picture(pixelNumberWidth, pixelNumberHeight);
     auto startTime = std::chrono::steady_clock::now();
+    SyncQueue<std::vector<Task> > taskQueue;
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < THREAD_NUMBER; ++i) {
+        threads.emplace_back(&Scene::worker, this, std::ref(taskQueue), std::ref(picture));
+    }
 
-    std::cout << "Start rendering scene...\n";
-    for (size_t col = /*400*/0; col < pixelNumberWidth; ++col) {
-        for (size_t row = 0/*180*/; row < pixelNumberHeight; ++row) {
+    std::cout << "Start rendering scene with " << THREAD_NUMBER << " threads...\n";
+    for (size_t col = 0; col < pixelNumberWidth; ++col) {
+        for (size_t row = 0; row < pixelNumberHeight; ++row) {
             // Смещаем 0.5 чтобы попасть в серединку пикселя.
             Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + screenTopLeft);
-            Point intersection;
-            auto color = computeRayColor(Ray(viewPoint, pixel - viewPoint), MAX_DEPTH, intersection);
-            picture.setAt(col, row, color);
+            taskQueue.push(Task(Task::TaskType::Trace, col, row, pixel));
         }
+
         // Отображение прогресса.
-        if (col == pixelNumberWidth - 1 || col % 5 == 0) {
-            std::cout << '\r' << "Rendering " << 100 * col / pixelNumberWidth << "%";
-            std::cout.flush();
-        }
+//        if (col == pixelNumberWidth - 1 || col % 1 == 0) {
+//            std::cout << '\r' << "Rendering " << 100 * col / (pixelNumberWidth - 1) << "%";
+//            std::cout.flush();
+//        }
     }
+    taskQueue.close();
+    for (std::thread &thread : threads) {
+        thread.join();
+    }
+
+#ifdef ENABLE_ANTIALIASING
     Picture newPic(pixelNumberWidth, pixelNumberHeight);
-#ifdef FIND_ALIASING
-    std::cout << "\nRunning Adaptive AntiAliasing...\n";
+
+    SyncQueue<std::vector<Task> > AAtaskQueue;
+    std::vector<std::thread> AAthreads;
+    for (size_t i = 0; i < THREAD_NUMBER; ++i) {
+        AAthreads.emplace_back(&Scene::worker, this, std::ref(AAtaskQueue), std::ref(newPic));
+    }
+    std::cout << "\nRunning Adaptive AntiAliasing with " << THREAD_NUMBER << " threads...\n";
     // Выделение ступенчатых учатсков.
     for (size_t col = 1; col < pixelNumberWidth - 1; ++col) {
-        for (size_t row = 1/*180*/; row < pixelNumberHeight -1; ++row) {
+        for (size_t row = 1; row < pixelNumberHeight -1; ++row) {
             Color ignoreColor;
             if (!isColorPreciseEnough({picture.getAt(col, row),
                                       picture.getAt(col + 1, row),
                                       picture.getAt(col, row + 1),
                                       picture.getAt(col - 1, row),
                                       picture.getAt(col, row - 1)}, ignoreColor)) {
+#ifndef HIGHLIGHT_ALIASING
                 Point newTopLeft(colVector * col + rowVector * row + screenTopLeft);
                 Point newBottomRight(colVector * (col + 1) + rowVector * (row + 1) + screenTopLeft);
-                newPic.setAt(col, row, mixSubPixels(newTopLeft, newBottomRight, 0));
-//                newPic.setAt(col, row, picture.getAt(col, row));
-//                newPic.setAt(col, row, CL_RED);
+                AAtaskQueue.push(Task(Task::TaskType::AA, col, row, Point(), newTopLeft, newBottomRight));
+//                newPic.setAt(col, row, mixSubPixels(newTopLeft, newBottomRight, 0));
+#endif  //  HIGHLIGHT_ALIASING
+#ifdef HIGHLIGHT_ALIASING
+                newPic.setAt(col, row, CL_RED);
+#endif  //  HIGHLIGHT_ALIASING
             } else {
                 newPic.setAt(col, row, picture.getAt(col, row));
             }
-            // Отображение прогресса.
-            if (col == pixelNumberWidth - 1 || col % 100 == 0) {
-                std::cout << '\r' << "Adaptive Sampling " << 100 * col / pixelNumberWidth << "%";
-                std::cout.flush();
-            }
+//            // Отображение прогресса.
+//            if (col == pixelNumberWidth - 2 || col % 50 == 0) {
+//                std::cout << '\r' << "AA " << 100 * col / (pixelNumberWidth - 2) << "%";
+//                std::cout.flush();
+//            }
         }
     }
-#endif  // FIND_ALIASING
+    AAtaskQueue.close();
+    for (std::thread &thread : AAthreads) {
+        thread.join();
+    }
+    picture = std::move(newPic);
+#endif  // ENABLE_ANTIALIASING
+
     auto endTime = std::chrono::steady_clock::now();
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
     std::cout << "\nRendering finished\n"
     << "Total time " << workTime.count() / 60 << "m "
     << workTime.count() % 60 << "s\n";
-    return newPic;
+    return picture;
 }
 
 const Color Scene::computeRayColor(const Ray &ray, int restDepth, Point &hitPoint) {
-//    static  int cuts = 0;
     if (ray.getPower() <= Ray::INSIGNIFICANT) {
-//        std::cerr << ++cuts << " CUT\n";
         return CL_BLACK;
     }
-//    if (restDepth <  5) {
-//        std::cout << "!";
-//        if (restDepth <  2) {
-//            std::cout << "!!";
-//        }
-//        std::cout << "\n";
-//    }
+
     if (restDepth <= 0) {
         return false;
     }
@@ -279,4 +298,27 @@ Object3d *Scene::checkIntersection(const Ray &ray,
 }
 
 
-
+void Scene::worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture) {
+    while (true) {
+        Task result;
+        if ((tasks.popOrWait()).some(result)) {
+            Point intersection;
+            Color color;
+            switch (result.type) {
+                case Task::TaskType::Trace:
+                    color = computeRayColor(Ray(viewPoint, result.point - viewPoint), MAX_DEPTH, intersection);
+                    break;
+                case Task::TaskType::AA:
+                    color = mixSubPixels(result.topLeft, result.bottomRight, 0);
+                    break;
+                default:
+                    assert(false);
+            }
+            picture.setAt(result.col, result.row, color);
+        } else {
+            if (tasks.isClosed()) {
+                break;
+            }
+        }
+    }
+}

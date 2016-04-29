@@ -4,11 +4,31 @@
 #include <cmath>
 #include <list>
 #include <memory>
+#include <thread>
 #include "Objects/Object3d.h"
 #include "Geometry/Geometry.h"
 #include "Painter/Painter.h"
 #include "LightSource.h"
 #include "KdTree.h"
+#include "SyncQueue/SyncQueue.h"
+
+
+struct Task {
+    enum TaskType {
+        Trace,
+        AA
+    };
+    Task()=default;
+
+
+    Task(TaskType type, size_t col, size_t row, const Point &point, const Point &topLeft = Point(), const Point &bottomRight=Point()) :
+            type(type), col(col),row(row),point(point),topLeft(topLeft),bottomRight(bottomRight) { }
+
+    TaskType type;
+    size_t col, row;
+    Point point;
+    Point topLeft, bottomRight;
+};
 
 class Scene {
 public:
@@ -30,11 +50,12 @@ public:
             lights(std::move(lights)) { }
 
     ~Scene() {
+        std::cout << "Destructing Scene\n";
         for (LightSource *light : lights) {
-            delete (light);
+            delete light;
         }
         for (Object3d *object : objectList) {
-            delete (object);
+            delete object;
         }
     }
 
@@ -79,8 +100,10 @@ private:
         return Color(r, g, b);
     }
 
+    void worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture);
+
     bool isColorPreciseEnough(const std::vector<Color> &neighbors, Color &mixedColor) {
-        const double COLOR_PRECISION = 0.02;
+        const double COLOR_PRECISION = 0.05;
         mixedColor = mixColors(neighbors);
 
         for (Color color : neighbors) {
@@ -130,7 +153,9 @@ private:
         return mixColors(colors);
     }
 
+
     static const int MAX_DEPTH = 10;
+    const size_t THREAD_NUMBER = std::thread::hardware_concurrency();
 
     // Точка камеры.
     Point viewPoint;

@@ -1,7 +1,6 @@
 #include <iostream>
 #include "Painter/CairoPainter.h"
 #include "Scene.h"
-#include "Picture.h"
 #include "SceneReader/TextSTLReader.h"
 #include "Objects/Sphere.h"
 
@@ -10,11 +9,9 @@ int main(int argc, char *argv[]) {
     CairoPainter cairoPainter(800, 600, "Ray Tracer");
 
     /// LIGHTS
-    std::vector<LightSource *> lights;
-//    lights.push_back(new LightSource(Point(10, 10, 0), 5000, CL_WHITE));
-    lights.push_back(new LightSource(Point(20, 20, 0), 7000, CL_WHITE));
-    lights.push_back(new LightSource(Point(-15, 0, 0), 200, CL_WHITE));
-
+    std::vector<LightSource *> lights = {
+            new LightSource(Point(5, 0, 0), 10000, CL_WHITE)
+    };
     /// STL MODELS
     std::vector<Object3d *> objects = reader.readObjects("./STLScenes/vvpfull.stl");
 //    Scene::mergeObjects(objects, reader.readObjects("./STLScenes/floor.stl"));
@@ -27,14 +24,13 @@ int main(int argc, char *argv[]) {
 //    Scene::mergeObjects(objects, std::move(manual));
 
     Picture picture;
-    {
-        Scene scene(Point(0, 0, 25),
-                    Point(2, 1.5, 20), Point(-2, -1.5, 20),
-                    800, 600,
-                    std::move(objects),
-                    std::move(lights));
-        picture = scene.render();
-    }
+    Scene scene(Point(0, 0, 24),
+                Point(2, 1.5, 20), Point(-2, -1.5, 20),
+                800, 600,
+                std::move(objects),
+                std::move(lights));
+    picture = scene.render();
+
     cairoPainter.showPicture(picture);
     return 0;
 }
