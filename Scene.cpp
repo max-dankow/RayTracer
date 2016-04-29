@@ -5,7 +5,6 @@
 #define FIND_ALIASING
 
 Picture Scene::render() {
-    const size_t scale = 4;
     Vector3d colVector = Vector3d(screenBottomRight.x - screenTopLeft.x,
                                   0, screenBottomRight.z - screenTopLeft.z) / pixelNumberWidth;
     Vector3d rowVector = Vector3d(0, screenBottomRight.y - screenTopLeft.y, 0) / pixelNumberHeight;
@@ -27,12 +26,11 @@ Picture Scene::render() {
             std::cout.flush();
         }
     }
-    int count = 0;
     Picture newPic(pixelNumberWidth, pixelNumberHeight);
 #ifdef FIND_ALIASING
-    std::cout << "\nRunning Adaptive Anti Aliasing..." << "\n";
+    std::cout << "\nRunning Adaptive AntiAliasing...\n";
     // Выделение ступенчатых учатсков.
-    for (size_t col = /*400*/1; col < pixelNumberWidth - 1; ++col) {
+    for (size_t col = 1; col < pixelNumberWidth - 1; ++col) {
         for (size_t row = 1/*180*/; row < pixelNumberHeight -1; ++row) {
             Color ignoreColor;
             if (!isColorPreciseEnough({picture.getAt(col, row),
@@ -45,19 +43,17 @@ Picture Scene::render() {
                 newPic.setAt(col, row, mixSubPixels(newTopLeft, newBottomRight, 0));
 //                newPic.setAt(col, row, picture.getAt(col, row));
 //                newPic.setAt(col, row, CL_RED);
-                count++;
             } else {
                 newPic.setAt(col, row, picture.getAt(col, row));
             }
             // Отображение прогресса.
-            if (col == pixelNumberWidth - 1 || col % 20 == 0) {
-                std::cout << '\r' << "Rendering " << 100 * col / pixelNumberWidth << "%";
+            if (col == pixelNumberWidth - 1 || col % 100 == 0) {
+                std::cout << '\r' << "Adaptive Sampling " << 100 * col / pixelNumberWidth << "%";
                 std::cout.flush();
             }
         }
     }
 #endif  // FIND_ALIASING
-    std::cout << "Bad are " << count << " of " << pixelNumberWidth * pixelNumberHeight << "\n";
     auto endTime = std::chrono::steady_clock::now();
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
     std::cout << "\nRendering finished\n"

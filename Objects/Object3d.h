@@ -11,7 +11,7 @@ struct Material {
 
     Material(const Color &color = CL_WHITE, double reflectance = 0,
              double refractiveIndex = 1, double transparency = 0,
-             double lambert = 0.4, double phong = 0.6, double phongPower = 7) :
+             double lambert = 0.4, double phong = 0.6, double phongPower = 3) : //todo: подобрать коэфиценты
             color(color), reflectance(reflectance),
             refractiveIndex(refractiveIndex),
             transparency(transparency),

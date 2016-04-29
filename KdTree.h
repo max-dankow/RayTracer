@@ -16,6 +16,8 @@ enum SplitMethod {
     SPLIT_ADAPTIVE
 };
 
+// todo: refactor this
+// todo: подумать над оптимизацией по помяти
 class KdNode {
 public:
     KdNode() { }

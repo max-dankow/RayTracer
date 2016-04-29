@@ -76,12 +76,12 @@ void KdTree::split(std::unique_ptr<KdNode> &node, size_t depth) {
 double KdTree::surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
                                     const std::vector<Object3d *> &objects) {
     auto leftBox = box;
-    leftBox.maxCorner[splitAxis] = splitPoint; // todo : make separate method
+    leftBox.maxCorner[splitAxis] = splitPoint;
     unsigned long leftObjectNumber = calculateNumberOfPrimitivesInBox(objects, leftBox);
 
     auto rightBox = box;
     rightBox.minCorner[splitAxis] = splitPoint;
-    unsigned long rightObjectNumber = calculateNumberOfPrimitivesInBox(objects, rightBox); //todo: сделать в один проход
+    unsigned long rightObjectNumber = calculateNumberOfPrimitivesInBox(objects, rightBox);
 
     return COST_EMPTY + leftObjectNumber * leftBox.surfaceArea() + rightObjectNumber * rightBox.surfaceArea();
 }
@@ -238,7 +238,6 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
 
             auto rightBox = surroundBox;
             rightBox.minCorner[axis] = splitPoint;
-//            assert(rightObjectNumber >= endsHereCount[i]);//todo remove after debug
             rightObjectNumber -= endsHereCount[i - 1];
 
             double heuristic = COST_EMPTY + leftObjectNumber * leftBox.surfaceArea() + rightObjectNumber * rightBox.surfaceArea();
