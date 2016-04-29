@@ -72,7 +72,7 @@ private:
     const Color computeRayColor(const Ray &ray, int restDepth, Point &hitPoint);
 
     Object3d *checkIntersection(const Ray &ray,
-                                std::vector<Object3d *> objectList,
+                                const std::vector<Object3d *> &objectList,
                                 Point &intersection, Color &color);
 
     Object3d *findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleColor);

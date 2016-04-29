@@ -4,6 +4,7 @@
 #include "SceneReader/TextSTLReader.h"
 #include "Objects/Sphere.h"
 
+// todo : перейти на float
 int main(int argc, char *argv[]) {
     TextSTLReader reader;
     CairoPainter cairoPainter(800, 600, "Ray Tracer");

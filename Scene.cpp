@@ -120,7 +120,7 @@ Object3d *Scene::findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleCo
     std::stack<KdNode *> stack;
     KdNode *node = objects.getRoot();
     while (true) {
-        if (node->getIsLeaf()) {
+        if (node->isLeaf()) {
             // пора считать пересечения.
             obstacle = checkIntersection(ray, node->getObjects(), hitPoint, obstacleColor);
             // Если в этом листе нет пересечений, то нужно вернуться на уровень выше.
@@ -142,9 +142,9 @@ Object3d *Scene::findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleCo
             if (t_left <= t_right) {
                 auto old = node;
                 if (t_left != std::numeric_limits<double>::infinity()) {
-                    node = old->getLeftPointer();
+                    node = old->getLeftPtr().get();
                     if (t_right != std::numeric_limits<double>::infinity()) {// todo : method isNotInf
-                        stack.push(old->getRightPointer());
+                        stack.push(old->getRightPtr().get());
                     }
                     continue;
                 }
@@ -153,9 +153,9 @@ Object3d *Scene::findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleCo
             if (t_right < t_left) {
                 auto old = node;
                 if (t_right != std::numeric_limits<double>::infinity()) {
-                    node = old->getRightPointer();
+                    node = old->getRightPtr().get();
                     if (t_left != std::numeric_limits<double>::infinity()) {
-                        stack.push(old->getLeftPointer());
+                        stack.push(old->getLeftPtr().get());
                     }
                     continue;
                 }
@@ -275,7 +275,7 @@ Vector3d Scene::refractRay(const Vector3d &direction, const Vector3d &normal, do
 
 
 Object3d *Scene::checkIntersection(const Ray &ray,
-                                   const std::vector<Object3d *> objectList,
+                                   const std::vector<Object3d *> &objectList,
                                    Point &intersection,
                                    Color &color) {
     double minSqrDistance = 0;  // Квадрат (для оптимизации) минимального расстояния до пересечения

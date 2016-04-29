@@ -6,18 +6,18 @@
 #include "Geometry/Geometry.h"
 #include "Objects/Object3d.h"
 
+using std::unique_ptr;
+
 enum SplitMethod {
     // Пробные точки для эвритики разбиения берутся по границам примитивов.
-    SPLIT_BY_BOUNDS,
+            SPLIT_BY_BOUNDS,
     // Пробные точки для эвритики разбиения берутся по сетке с фиксированным шагом.
-    SPLIT_BY_REGULAR_GRID,
+            SPLIT_BY_REGULAR_GRID,
     SPLIT_BY_GRID_FAST,
     // Начиная с определенной глубины вместо метода SPLIT_BY_REGULAR_GRID используется метод SPLIT_BY_BOUNDS.
-    SPLIT_ADAPTIVE
+            SPLIT_ADAPTIVE
 };
 
-// todo: refactor this
-// todo: подумать над оптимизацией по помяти
 class KdNode {
 public:
     KdNode() { }
@@ -25,6 +25,10 @@ public:
     KdNode(const BoundingBox &box,
            const std::vector<Object3d *> &objects) :
             box(box), objects(objects) { }
+
+    KdNode(const BoundingBox &box,
+           std::vector<Object3d *> &&objects) :
+            box(box), objects(std::move(objects)) { }
 
     const BoundingBox &getBox() const {
         return box;
@@ -35,42 +39,34 @@ public:
     }
 
     void setSplitAxis(Axis splitAxis) {
-        KdNode::splitAxis = splitAxis;
+        this->splitAxis = splitAxis;
     }
 
-    double getSplitPoint() const {
+    float getSplitPoint() const {
         return splitPoint;
     }
 
-    void setSplitPoint(double splitPoint) {
+    void setSplitPoint(float splitPoint) {
         KdNode::splitPoint = splitPoint;
     }
 
-    std::unique_ptr<KdNode> &getLeftSubTree() {
-        return leftSubTree;
+    void resetRightPointer(KdNode *&&node) {
+        rightPtr.reset(node);
     }
 
     void resetLeftPointer(KdNode *&&node) {
-        leftSubTree.reset(node);
+        leftPtr.reset(node);
     }
 
-    std::unique_ptr<KdNode> &getRightSubTree() {
-        return rightSubTree;
+    unique_ptr<KdNode> &getRightPtr() {
+        return rightPtr;
     }
 
-    KdNode *getRightPointer() {
-        return rightSubTree.get();
+    unique_ptr<KdNode> &getLeftPtr() {
+        return leftPtr;
     }
 
-    KdNode *getLeftPointer() {
-        return leftSubTree.get();
-    }
-
-    void resetRightPointer(KdNode *&&node) {
-        rightSubTree.reset(node);
-    }
-
-    std::vector<Object3d *> &getObjects() { // todo : наличие такого прямого доступа подозрительно
+    const std::vector<Object3d *> &getObjects() const {
         return objects;
     }
 
@@ -78,29 +74,23 @@ public:
         objects.clear();
     }
 
-    void setObjects(std::vector<Object3d *> &&objects) {
-        KdNode::objects = std::move(objects);
+    bool isLeaf() const {
+        assert(leftPtr != nullptr || rightPtr == nullptr);
+        return leftPtr == nullptr;
     }
 
-    bool getIsLeaf() const { //todo: плохо выглядит
-        return isLeaf;
-    }
-
-    void setIsLeaf(bool isLeaf) {
-        KdNode::isLeaf = isLeaf;
-    }
-
-    unsigned long getObjectsNumber() const {
+    size_t getObjectsNumber() const {
         return objects.size();
     }
 
 private:
-    bool isLeaf;
     BoundingBox box;
+    // Ось, ортогональной которой проходит разделяющая плоскость.
     Axis splitAxis;
-    double splitPoint;
-    std::unique_ptr<KdNode> leftSubTree, rightSubTree;
-    // Если не лист, то хранит список объектов принадлежащий обоим поддеревьям.
+    // Абсолютная координата по splitAxis.
+    float splitPoint;
+    // Указатели на поддеревья.
+    unique_ptr<KdNode> leftPtr, rightPtr;
     std::vector<Object3d *> objects;
 };
 
@@ -121,13 +111,14 @@ public:
 
 private:
     // Рекурсивное разбиение узла.
-    void split(std::unique_ptr<KdNode> &node, size_t depth);
+    void split(unique_ptr<KdNode> &node);
 
+    // Подсчет эвристики площади поверхности sah.
     double surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
                                 const std::vector<Object3d *> &objects);
 
-    unsigned long calculateNumberOfPrimitivesInBox(const std::vector<Object3d *> &objects,
-                                                   const BoundingBox &box);
+    unsigned long countPrimitivesInBox(const std::vector<Object3d *> &objects,
+                                       const BoundingBox &box);
 
     size_t getRegularGridCount() const {
         return REGULAR_GRID_COUNT;
@@ -135,18 +126,19 @@ private:
 
     // Ищет плоскость, разбивающую box самым выгодным способом.
     // Возвращает true, если такая плоскость существует, и false, если не нужно делить.
-    bool findSplitPlane(SplitMethod method, std::unique_ptr<KdNode> &node, Axis &splitAxis, double &splitPoint);
+    bool findSplitPlane(SplitMethod method, unique_ptr<KdNode> &node, Axis &splitAxis, double &splitPoint);
 
-    bool findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+    bool findSplitByBounds(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
 
-    bool findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
-    bool findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+    bool findSplitByGrid(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+
+    bool findSplitByGridFast(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
 
     const SplitMethod splitMethod = SPLIT_BY_GRID_FAST;
     static const size_t REGULAR_GRID_COUNT = 32;
     const double COST_EMPTY = 0.1;
-    size_t nodeNumber;
-    std::unique_ptr<KdNode> root;
+    size_t nodeCount;
+    unique_ptr<KdNode> root;
 };
 
 #endif //RAYTRACER_KDTREE_H
