@@ -297,7 +297,6 @@ Object3d *Scene::checkIntersection(const Ray &ray,
     return obstacle;
 }
 
-
 void Scene::worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture) {
     while (true) {
         Task result;

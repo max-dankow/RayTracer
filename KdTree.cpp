@@ -107,7 +107,7 @@ bool KdTree::findSplitPlane(SplitMethod method, std::unique_ptr<KdNode> &node, A
         case SPLIT_BY_GRID_FAST:
             return findSplitByGridFast(node, splitAxis, splitPoint);
         case SPLIT_ADAPTIVE:
-            if (node->getObjectsNumber() <= getRegularGridCount()) {
+            if (node->getObjectsNumber() * node->getObjectsNumber() <= getRegularGridCount()) {
                 return findSplitByBounds(node, splitAxis, splitPoint);
             } else {
                 return findSplitByGridFast(node, splitAxis, splitPoint);

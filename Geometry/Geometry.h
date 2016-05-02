@@ -4,7 +4,7 @@
 #include <cmath>
 #include <limits>
 
-enum Axis {
+enum Axis : char {
     AXIS_X = 0,
     AXIS_Y = 1,
     AXIS_Z = 2

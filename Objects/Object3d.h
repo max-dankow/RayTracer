@@ -16,9 +16,7 @@ struct Material {
             refractiveIndex(refractiveIndex),
             transparency(transparency),
             lambert(lambert), phong(phong),
-            phongPower(phongPower) {
-
-    }
+            phongPower(phongPower) { }
 
     const Color color;
     const double reflectance;

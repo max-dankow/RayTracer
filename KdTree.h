@@ -134,7 +134,7 @@ private:
 
     bool findSplitByGridFast(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
 
-    const SplitMethod splitMethod = SPLIT_BY_GRID_FAST;
+    const SplitMethod splitMethod = SPLIT_ADAPTIVE;
     static const size_t REGULAR_GRID_COUNT = 32;
     const double COST_EMPTY = 0.1;
     size_t nodeCount;

@@ -3,6 +3,7 @@
 #include "../Geometry/BoundingBox.h"
 #include "../Geometry/Ray.h"
 #include "../Objects/Triangle3d.h"
+#include "../KdTree.h"
 
 TEST(Vector3d, Order) {
     ASSERT_TRUE(Point(10, 10, 10).totallyLessEqualThan(Point(10, 10, 10.1)));
@@ -54,12 +55,12 @@ TEST(Geometry, Vector3dProduct) {
 }
 
 TEST(Objects, GetBoundingBox) {
-    Triangle3d triangle(Point(-1, -10, 2), Point(1, 0, -2), Point(0, 1, 0), <#initializer#>, 0, 0);
+    Triangle3d triangle(Point(-1, -10, 2), Point(1, 0, -2), Point(0, 1, 0));
     ASSERT_EQ(triangle.getBoundingBox().minCorner, Point(-1, -10, -2));
     ASSERT_EQ(triangle.getBoundingBox().maxCorner, Point(1, 1, 2));
-    triangle = Triangle3d(Point(0, 0, 0), Point(1, 0, 0), Point(0, 1, 0), <#initializer#>, 0, 0);
-    ASSERT_EQ(triangle.getBoundingBox().minCorner, Point(0, 0, 0));
-    ASSERT_EQ(triangle.getBoundingBox().maxCorner, Point(1, 1, 0));
+    Triangle3d triangle2 = Triangle3d(Point(0, 0, 0), Point(1, 0, 0), Point(0, 1, 0));
+    ASSERT_EQ(triangle2.getBoundingBox().minCorner, Point(0, 0, 0));
+    ASSERT_EQ(triangle2.getBoundingBox().maxCorner, Point(1, 1, 0));
 }
 
 TEST(BoundingBox, SurfaceArea) {
@@ -69,5 +70,8 @@ TEST(BoundingBox, SurfaceArea) {
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
+    std::cerr << sizeof(KdNode) << ' '
+    << sizeof(std::vector<Object3d*>) << ' '
+    << sizeof(Axis) << std::endl;
     return RUN_ALL_TESTS();
 }

@@ -21,10 +21,7 @@ bool Triangle3d::intersectRay(const Ray &ray, Point &intersection) const {
     }
     Point p = ray.getPointAt(t);  // Точка пересечения луча с плоскостью треугольника
     // Проверяем лежит ли p внутри треугольника.
-    Vector3d ap(a, p), bp(b, p), cp(c, p);
-    if (Vector3d::dotProduct(normal, Vector3d::crossProduct(ab, ap)) >= 0
-        && Vector3d::dotProduct(normal, Vector3d::crossProduct(bc, bp)) >= 0
-        && Vector3d::dotProduct(normal, Vector3d::crossProduct(ca, cp)) >= 0) {
+    if (p.belongsToTriangle(a, b, c, normal)) {
         intersection = p;
         return true;
     }

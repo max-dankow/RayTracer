@@ -89,18 +89,28 @@ struct Vector3d {
                 && (this->z < other.z || Geometry::areDoubleEqual(this->z, other.z)));
     }
 
+    friend std::istream &operator>>(std::istream &input, Vector3d &vector) {
+        input >> vector.x >> vector.y >> vector.z;
+        return input;
+    }
+
+    friend std::ostream &operator<<(std::ostream &output, const Vector3d &vector) {
+        output << vector.x << ' ' << vector.y << ' ' << vector.z;
+        return output;
+    }
+
+    bool belongsToTriangle(const Vector3d &a, const Vector3d &b, const Vector3d &c, const Vector3d &normal) {
+        Vector3d ab(a, b);
+        Vector3d bc(b, c);
+        Vector3d ca(c, a);
+        Vector3d ap(a, *this), bp(b, *this), cp(c, *this);
+        return Vector3d::dotProduct(normal, Vector3d::crossProduct(ab, ap)) >= 0
+               && Vector3d::dotProduct(normal, Vector3d::crossProduct(bc, bp)) >= 0
+               && Vector3d::dotProduct(normal, Vector3d::crossProduct(ca, cp)) >= 0;
+    }
+
     double x, y, z;
 };
-
-static std::istream &operator>>(std::istream &input, Vector3d &vector) {
-    input >> vector.x >> vector.y >> vector.z;
-    return input;
-}
-
-static std::ostream &operator<<(std::ostream &output, const Vector3d &vector) {
-    output << vector.x << ' ' << vector.y << ' ' << vector.z;
-    return output;
-}
 
 // typedef для разделения сущностей точки и вектора.
 typedef Vector3d Point;

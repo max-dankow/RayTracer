@@ -28,10 +28,6 @@ public:
         return radiusSquared;
     }
 
-    virtual double getReflectance() const {
-        return material.reflectance;
-    }
-
     virtual Vector3d getNormal(const Point &point) const {
         assert(Geometry::areDoubleEqual((point - center).lengthSquared(), radiusSquared));
         return Vector3d(point - center).normalize();

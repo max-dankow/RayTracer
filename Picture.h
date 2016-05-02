@@ -7,7 +7,6 @@
 #include <limits>
 #include <iostream>
 
-// todo: инкаплусировать всю работу с цветами в классе
 // todo: перейти к одному байту - 24 -> 3; Тогда Picture 800x600 11Mb -> 1.4mb
 // Представляет цвет в формате RGB каждая компонента - насыщенность от 0 до 1.
 struct Color {
@@ -26,7 +25,6 @@ struct Color {
     }
 
     double r, g, b;
-    double h, s, v;
 };
 
 class Picture {
@@ -71,7 +69,28 @@ public:
         return colorMap;
     }
 
-    Picture mutiSempleAntiAliasing(size_t sampleNumber);
+    Picture mutiSempleAntiAliasing(size_t sampleNumber) {
+        Picture newPicture(this->width / sampleNumber, this->height / sampleNumber); //todo: copy looks bad and slow
+        std::cout << "Smoothing " << this->width <<'x' << this->height << "with MSAAx" << sampleNumber << "...\n";
+        double pixelsPerSample = sampleNumber * sampleNumber;
+        for (size_t col = 0; col < this->width / sampleNumber; ++col) {
+            for (size_t row = 0; row < this->height / sampleNumber; ++row) {
+                double r=0, g=0, b=0;
+                for (size_t pixelCol = 0; pixelCol < sampleNumber; ++pixelCol) {
+                    for (size_t pixelRow = 0; pixelRow < sampleNumber; ++pixelRow) {
+                        auto subpixelColor = this->getAt(col * sampleNumber + pixelCol, row * sampleNumber + pixelRow);
+                        r += subpixelColor.r;
+                        g += subpixelColor.g;
+                        b += subpixelColor.b;
+                    }
+                }
+                Color newColor(r / pixelsPerSample, g / pixelsPerSample, b / pixelsPerSample);
+                newPicture.setAt(col, row, newColor);
+            }
+        }
+        std::cout << "Smoothing finished\n";
+        return newPicture;
+    }
 
 private:
     size_t width, height;
@@ -83,124 +102,5 @@ static const Color CL_BLACK = Color(0, 0, 0);
 static const Color CL_RED = Color(1, 0, 0);
 static const Color CL_GREEN = Color(0, 1, 0);
 static const Color CL_BLUE = Color(0, 0, 1);
-//static const Color CL_UNDEFINED = Color(-1, -1, -1);
-/*
-typedef struct {
-    double r;       // percent
-    double g;       // percent
-    double b;       // percent
-} rgb;
 
-typedef struct {
-    double h;       // angle in degrees
-    double s;       // percent
-    double v;       // percent
-} hsv;*/
-/*
-static Color   rgb2hsv(Color in);
-static Color   hsv2rgb(Color in);
-
-Color rgb2hsv(Color in)
-{
-    Color         out;
-    double      min, max, delta;
-
-    min = in.r < in.g ? in.r : in.g;
-    min = min  < in.b ? min  : in.b;
-
-    max = in.r > in.g ? in.r : in.g;
-    max = max  > in.b ? max  : in.b;
-
-    out.v = max;                                // v
-    delta = max - min;
-    if (delta < 0.00001)
-    {
-        out.s = 0;
-        out.h = 0; // undefined, maybe nan?
-        return out;
-    }
-    if( max > 0.0 ) { // NOTE: if Max is == 0, this divide would cause a crash
-        out.s = (delta / max);                  // s
-    } else {
-        // if max is 0, then r = g = b = 0
-        // s = 0, v is undefined
-        out.s = 0.0;
-        out.h = std::numeric_limits<double>::quiet_NaN();
-        return out;
-    }
-    if( in.r >= max )                           // > is bogus, just keeps compilor happy
-        out.h = ( in.g - in.b ) / delta;        // between yellow & magenta
-    else
-    if( in.g >= max )
-        out.h = 2.0 + ( in.b - in.r ) / delta;  // between cyan & yellow
-    else
-        out.h = 4.0 + ( in.r - in.g ) / delta;  // between magenta & cyan
-
-    out.h *= 60.0;                              // degrees
-
-    if( out.h < 0.0 )
-        out.h += 360.0;
-
-    return out;
-}
-
-
-Color hsv2rgb(Color in)
-{
-    double      hh, p, q, t, ff;
-    long        i;
-    Color         out(in);
-
-    if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
-        out.r = in.v;
-        out.g = in.v;
-        out.b = in.v;
-        return out;
-    }
-    hh = in.h;
-    if(hh >= 360.0) hh = 0.0;
-    hh /= 60.0;
-    i = (long)hh;
-    ff = hh - i;
-    p = in.v * (1.0 - in.s);
-    q = in.v * (1.0 - (in.s * ff));
-    t = in.v * (1.0 - (in.s * (1.0 - ff)));
-
-    switch(i) {
-        case 0:
-            out.r = in.v;
-            out.g = t;
-            out.b = p;
-            break;
-        case 1:
-            out.r = q;
-            out.g = in.v;
-            out.b = p;
-            break;
-        case 2:
-            out.r = p;
-            out.g = in.v;
-            out.b = t;
-            break;
-
-        case 3:
-            out.r = p;
-            out.g = q;
-            out.b = in.v;
-            break;
-        case 4:
-            out.r = t;
-            out.g = p;
-            out.b = in.v;
-            break;
-        case 5:
-        default:
-            out.r = in.v;
-            out.g = p;
-            out.b = q;
-            break;
-    }
-    return out;
-}
-*/
 #endif //RAYTRACER_PICTURE_H
