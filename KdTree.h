@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <stack>
 #include "Geometry/Geometry.h"
 #include "Objects/Object3d.h"
 
@@ -97,6 +98,10 @@ private:
 
 class KdTree {
 public:
+    KdTree() {
+        root.reset(nullptr);
+    }
+
     KdTree(const std::vector<Object3d *> &objects);
 
     KdTree(const KdTree &) = delete;
@@ -108,6 +113,8 @@ public:
     KdNode *const getRoot() const {
         return root.get();
     }
+
+    Object3d * findObstacle(const Ray &ray, Point &hitPoint) const;
 
 private:
     // Рекурсивное разбиение узла.
@@ -133,6 +140,10 @@ private:
     bool findSplitByGrid(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
 
     bool findSplitByGridFast(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+
+    Object3d * checkIntersection(const Ray &ray,
+                                 const std::vector<Object3d *> &objectList,
+                                 Point &intersection) const;
 
     const SplitMethod splitMethod = SPLIT_ADAPTIVE;
     static const size_t REGULAR_GRID_COUNT = 32;

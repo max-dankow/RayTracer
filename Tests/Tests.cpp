@@ -4,6 +4,7 @@
 #include "../Geometry/Ray.h"
 #include "../Objects/Triangle3d.h"
 #include "../KdTree.h"
+#include "../LightSources/LightSource.h"
 
 TEST(Vector3d, Order) {
     ASSERT_TRUE(Point(10, 10, 10).totallyLessEqualThan(Point(10, 10, 10.1)));
@@ -70,8 +71,6 @@ TEST(BoundingBox, SurfaceArea) {
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
-    std::cerr << sizeof(KdNode) << ' '
-    << sizeof(std::vector<Object3d*>) << ' '
-    << sizeof(Axis) << std::endl;
+    std::cerr << sizeof(Photon);
     return RUN_ALL_TESTS();
 }

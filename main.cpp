@@ -1,11 +1,12 @@
 #include <iostream>
 #include "Painter/CairoPainter.h"
 #include "Scene.h"
-#include "Objects/PlaneQuadrangle.h"
 #include "SceneReader/TextSTLReader.h"
 #include "Objects/Sphere.h"
 #include "Objects/Parallelogram.h"
 #include "Objects/Triangle3d.h"
+#include "LightSources/PointLight.h"
+#include "PhotonMap.h"
 
 // todo : перейти на float
 int main(int argc, char *argv[]) {
@@ -14,13 +15,14 @@ int main(int argc, char *argv[]) {
 
     /// LIGHTS
     std::vector<LightSource *> lights = {
-            new LightSource(Point(0, 4, -5), 20, CL_WHITE),
-            new LightSource(Point(0, 20, 50), 1000, CL_WHITE),
+            new PointLight(Point(0, 4, -5), 20),
+//            new PointLight(Point(0, 20, 50), 1000),
     };
     /// STL MODELS
     std::vector<Object3d *> objects;
-    objects = reader.readObjects("./STLScenes/alduin.stl");
-    Scene::mergeObjects(objects, reader.readObjects("./STLScenes/floor.stl"));
+
+//    objects = reader.readObjects("./STLScenes/alduin.stl");
+//    Scene::mergeObjects(objects, reader.readObjects("./STLScenes/floor.stl"));
 
     /// OTHER
     std::vector<Object3d *> manual = {
@@ -30,6 +32,11 @@ int main(int argc, char *argv[]) {
             new Sphere(Point(-3, 2, 7), 3, Material(CL_BLUE + CL_GREEN, 0, 0.5, 1))
     };
     Scene::mergeObjects(objects, std::move(manual));
+
+    PhotonMap map(lights, KdTree(objects), 100000);
+    for (const Photon &photon : map.getStoredPhotons()) {
+        objects.push_back(new Sphere(photon.getRay().getOrigin(), 0.05, Material()));
+    }
 
     Picture picture;
     Scene scene(Point(0, 0, -2),

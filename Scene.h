@@ -8,7 +8,7 @@
 #include "Objects/Object3d.h"
 #include "Geometry/Geometry.h"
 #include "Painter/Painter.h"
-#include "LightSource.h"
+#include "LightSources/LightSource.h"
 #include "KdTree.h"
 #include "SyncQueue/SyncQueue.h"
 
@@ -69,23 +69,19 @@ public:
     }
 
 private:
-    const Color computeRayColor(const Ray &ray, int restDepth, Point &hitPoint);
+    const Color computeRayColor(const Ray &ray, int restDepth);
 
-    Object3d *checkIntersection(const Ray &ray,
-                                const std::vector<Object3d *> &objectList,
-                                Point &intersection, Color &color);
-
-    Object3d *findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleColor);
+//    Object3d *checkIntersection(const Ray &ray,
+//                                const std::vector<Object3d *> &objectList,
+//                                Point &intersection, Color &color);
+//
+//    Object3d *findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleColor);
 
     Color computeDiffuseColor(Object3d *object, const Point &point, const Ray &viewRay);
 
     Color computeReflectionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
 
     Color computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
-
-    static Vector3d refractRay(const Vector3d &direction, const Vector3d &normal, double q);
-
-    static Vector3d reflectRay(const Vector3d &direction, const Vector3d &normal);
 
     Color mixColors(const std::vector<Color> &neighbors) {
         double r = 0, g = 0, b = 0;
@@ -130,8 +126,7 @@ private:
             for (size_t row = 0; row < AAScale; ++row) {
                 // Смещаем 0.5 чтобы попасть в серединку пикселя.
                 Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + topLeft);
-                Point intersection;
-                auto color = computeRayColor(Ray(viewPoint, pixel - viewPoint), MAX_DEPTH, intersection);
+                auto color = computeRayColor(Ray(viewPoint, pixel - viewPoint), MAX_DEPTH);
 //                picture.setAt(col, row,color);
                 colors.push_back(color);
             }
@@ -167,7 +162,7 @@ private:
 
     size_t pixelNumberWidth, pixelNumberHeight;
     Color backgroundColor = CL_BLACK;
-    double backgroundIllumination = 0.1;
+    double backgroundIllumination = 0;
 
     // Kd дерево указателей на все объекты сцены, хранимые в куче.
     KdTree objects;

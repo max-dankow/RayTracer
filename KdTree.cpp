@@ -218,7 +218,7 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
                 binIndex = (long) std::floor(d);
             }
             // Если начало после splitPointTo
-            if (binIndex > gridCount - 1) {
+            if (binIndex > gridCount - 1) { // todo: comparison between signed and unsigned integer expressions
                 binIndex = gridCount - 1;
             }
             endsHereCount[binIndex]++;
@@ -249,4 +249,85 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
     // Если стоимость прослеживания дочерних узлов не будет меньше
     // чем стоимость прослеживания узла целиком, то остановится.
     return node->getObjectsNumber() * surroundBox.surfaceArea() > heuristicMin;
+}
+
+Object3d *KdTree::checkIntersection(const Ray &ray,
+                                    const std::vector<Object3d *> &objectList,
+                                    Point &intersection) const {
+    double minSqrDistance = 0;  // Квадрат минимального расстояния до пересечения
+    Object3d *obstacle = nullptr;
+    for (Object3d *object : objectList) {
+        Point thisIntersection;
+        if (object->intersectRay(ray, thisIntersection)) {
+            double sqrDistance = (thisIntersection - ray.getOrigin()).lengthSquared();
+            if ((obstacle == nullptr || sqrDistance < minSqrDistance)
+                && !Geometry::areDoubleEqual(sqrDistance, 0)) {
+                minSqrDistance = sqrDistance;
+                object->intersectRay(ray, thisIntersection);
+                intersection = thisIntersection;
+                obstacle = object;
+            }
+        }
+    }
+    return obstacle;
+}
+
+Object3d *KdTree::findObstacle(const Ray &ray, Point &hitPoint) const {
+    if (root == nullptr) {
+        return nullptr;
+    }
+    Object3d *obstacle = nullptr;
+    std::stack<KdNode *> stack;
+    KdNode *node = root.get();
+    while (true) {
+        if (node->isLeaf()) {
+            // пора считать пересечения.
+            obstacle = checkIntersection(ray, node->getObjects(), hitPoint);
+            // Если в этом листе нет пересечений, то нужно вернуться на уровень выше.
+            if (obstacle != nullptr && node->getBox().containsPoint(hitPoint)) {
+                // Пересечение успешно найдено.
+                break;
+            }
+        } else {
+            auto leftBox = node->getBox();
+            leftBox.maxCorner[node->getSplitAxis()] = node->getSplitPoint();
+
+            auto rightBox = node->getBox();
+            rightBox.minCorner[node->getSplitAxis()] = node->getSplitPoint();
+
+            double t_left = leftBox.intersectRay(ray);
+            double t_right = rightBox.intersectRay(ray);
+
+            // Сначала пересекается leftBox.
+            if (t_left <= t_right) {
+                auto old = node;
+                if (t_left != std::numeric_limits<double>::infinity()) {
+                    node = old->getLeftPtr().get();
+                    if (t_right != std::numeric_limits<double>::infinity()) {// todo : method isNotInf
+                        stack.push(old->getRightPtr().get());
+                    }
+                    continue;
+                }
+            }
+            // Сначала пересекается rightBox.
+            if (t_right < t_left) {
+                auto old = node;
+                if (t_right != std::numeric_limits<double>::infinity()) {
+                    node = old->getRightPtr().get();
+                    if (t_left != std::numeric_limits<double>::infinity()) {
+                        stack.push(old->getLeftPtr().get());
+                    }
+                    continue;
+                }
+            }
+        }
+
+        // Если ничего не найдено то вернуться на уровень выше.
+        if (stack.empty()) {
+            break;
+        }
+        node = stack.top();
+        stack.pop();
+    }
+    return obstacle;
 }
