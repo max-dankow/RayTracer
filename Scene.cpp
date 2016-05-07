@@ -4,6 +4,9 @@
 #include "Scene.h"
 
 #define ENABLE_ANTIALIASING
+#define ENABLE_ILLUMINATION
+#define ENABLE_REFLECTION
+#define ENABLE_REFRACTION
 //#define HIGHLIGHT_ALIASING
 
 Picture Scene::render() {
@@ -45,7 +48,7 @@ Picture Scene::render() {
     for (size_t i = 0; i < THREAD_NUMBER; ++i) {
         AAthreads.emplace_back(&Scene::worker, this, std::ref(AAtaskQueue), std::ref(newPic));
     }
-    std::cout << "\nRunning Adaptive AntiAliasing with " << THREAD_NUMBER << " threads...\n";
+    std::cout << "Running Adaptive AntiAliasing with " << THREAD_NUMBER << " threads...\n";
     // Выделение ступенчатых учатсков.
     for (size_t col = 1; col < pixelNumberWidth - 1; ++col) {
         for (size_t row = 1; row < pixelNumberHeight -1; ++row) {
@@ -83,7 +86,7 @@ Picture Scene::render() {
 
     auto endTime = std::chrono::steady_clock::now();
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
-    std::cout << "\nRendering finished\n"
+    std::cout << "Rendering finished\n"
     << "Total time " << workTime.count() / 60 << "m "
     << workTime.count() % 60 << "s\n";
     return picture;
@@ -108,10 +111,24 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth, Point &hitPoin
     }
     auto obstacleMaterial = obstacle->getMaterial();
     double surface = 1 - obstacleMaterial.reflectance - obstacleMaterial.transparency;
-    surface = std::max(0., surface);//todo
-    finalColor = computeDiffuseColor(obstacle, hitPoint, ray) * surface
-                 + computeReflectionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial.reflectance
-                 + computeRefractionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial.transparency;
+    surface = std::max(0., surface);//todo: a + b + c = 0; diffuse is also property
+
+#ifdef ENABLE_ILLUMINATION
+    finalColor = computeDiffuseColor(obstacle, hitPoint, ray);
+
+#ifdef ENABLE_REFLECTION
+    finalColor += computeReflectionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial.reflectance;
+#endif  // ENABLE_REFLECTION
+
+#ifdef ENABLE_REFRACTION
+    finalColor += (computeRefractionColor(obstacle, hitPoint, ray, restDepth)
+                  * obstacleMaterial.color) * obstacleMaterial.transparency;
+//    double energy = sqrt(pureRefracted.r * pureRefracted.r + pureRefracted.g * pureRefracted.g + pureRefracted.b * pureRefracted.b) / sqrt(3);
+//    finalColor +=  obstacleMaterial.color * (1 - obstacleMaterial.transparency) * energy +
+//             pureRefracted * obstacleMaterial.transparency;
+#endif  // ENABLE_REFRACTION
+
+#endif  // ENABLE_ILLUMINATION
     return finalColor;
 }
 
