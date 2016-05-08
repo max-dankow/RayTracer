@@ -11,7 +11,7 @@
 #include "LightSources/LightSource.h"
 #include "KdTree.h"
 #include "SyncQueue/SyncQueue.h"
-
+#include "PhotonMap.h"
 
 struct Task {
     enum TaskType {
@@ -39,15 +39,17 @@ public:
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
           std::vector<Object3d *> &&objects,
-          std::vector<LightSource *> &&lights) :
+          std::vector<LightSource *> &&lights, size_t photonsNumber = 1000000) :
             viewPoint(viewPoint),
             screenTopLeft(screenTopLeft),
             screenBottomRight(screenBottomRight),
             pixelNumberWidth(pixelNumberWidth),
             pixelNumberHeight(pixelNumberHeight),
-            objects(std::vector<GeometricShape *>(objects.begin(), objects.end())),
             objectList(std::move(objects)),
-            lights(std::move(lights)) { }
+            lights(std::move(lights)) {
+        this->objects = KdTree(std::vector<GeometricShape *>(objectList.begin(), objectList.end()));
+        this->photonMap = PhotonMap(this->lights, this->objects, photonsNumber);
+    }
 
     ~Scene() {
         std::cout << "Destructing Scene\n";
@@ -82,6 +84,23 @@ private:
     Color computeReflectionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
 
     Color computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
+
+    Color computeIndirectIllumination(Object3d *object, const Point &point) {
+        auto KNN = photonMap.locatePhotons(point, 1, 1000);
+        if (KNN.empty()) {
+            return CL_BLACK;
+        }
+        double r=0, g=0, b=0;
+        for (Photon *photon : KNN) {
+            r += photon->getColor().r;
+            g += photon->getColor().g;
+            b += photon->getColor().b;
+        }
+//        std::cerr << r << ' ' << g << ' ' << b << ' ' << KNN.size() << '\n';
+        double gatheringRadiusSqr = Vector3d(KNN.front()->getRay().getOrigin(), point).lengthSquared();
+        double sphereArea = 4. * M_PI * gatheringRadiusSqr;
+        return Color(r / sphereArea, g / sphereArea, b / sphereArea);
+    }
 
     Color mixColors(const std::vector<Color> &neighbors) {
         double r = 0, g = 0, b = 0;
@@ -166,6 +185,7 @@ private:
 
     // Kd дерево указателей на все объекты сцены, хранимые в куче.
     KdTree objects;
+    PhotonMap photonMap;
     std::vector<Object3d *> objectList;
     // Указатели на все источники освещения, так же хранимые в куче.
     std::vector<LightSource *> lights;

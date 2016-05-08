@@ -108,6 +108,7 @@ public:
 
     KdTree(KdTree &&other) {
         this->root = std::move(other.root);
+        other.root.reset(nullptr);
     }
 
     KdTree &operator=(KdTree &&other) {

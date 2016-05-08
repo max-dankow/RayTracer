@@ -10,15 +10,17 @@
 // todo: перейти к одному байту - 24 -> 3; Тогда Picture 800x600 11Mb -> 1.4mb
 // Представляет цвет в формате RGB каждая компонента - насыщенность от 0 до 1.
 struct Color {
-    explicit Color(double r = 0, double g = 0, double b = 0) : r(r), g(g), b(b) {
-//        assert(r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1);
+    explicit Color(double r = 0, double g = 0, double b = 0) {
+        this->r = std::min(r, 1.);
+        this->g = std::min(g, 1.);
+        this->b = std::min(b, 1.);
     }
 
     Color operator*(double k) const {
         return Color(std::min(r * k, 1.), std::min(g * k, 1.), std::min(b * k, 1.));
     }
 
-    Color operator*(const Color &other) {
+    Color operator*(const Color &other) const {
         return Color(this->r * other.r, this->g * other.g, this->b * other.b);
     }
 

@@ -8,6 +8,7 @@ KdTree::KdTree(const std::vector<GeometricShape *> &objects) {
 
     if (objects.empty()) {
         root = nullptr;
+        std::cout << "Kd-tree has been built, no objects\n";
         return;
     }
     // Вычисляем всеобъемлющий box

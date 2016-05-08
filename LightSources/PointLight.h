@@ -16,7 +16,7 @@ public:
         double theta = thetaDistribution(randomEngine);
         double phi = angleDistribution(randomEngine);
         Vector3d direction(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
-        return Photon(getPoint(), direction, getColor());
+        return Photon(getPoint(), direction, getColor() * (getBrightness() / 10000.));
     }
 
 private:

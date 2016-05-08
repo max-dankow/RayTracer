@@ -3,9 +3,11 @@
 #include <thread>
 #include "Scene.h"
 
-#define ENABLE_ILLUMINATION
-#define ENABLE_REFLECTION
-#define ENABLE_REFRACTION
+//#define ENABLE_ILLUMINATION
+//#define ENABLE_REFLECTION
+//#define ENABLE_REFRACTION
+#define ENABLE_INDIRECT_ILLUMINATION
+
 //#define ENABLE_ANTIALIASING
 //#define HIGHLIGHT_ALIASING
 
@@ -28,12 +30,6 @@ Picture Scene::render() {
             Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + screenTopLeft);
             taskQueue.push(Task(Task::TaskType::Trace, col, row, pixel));
         }
-
-        // Отображение прогресса.
-//        if (col == pixelNumberWidth - 1 || col % 1 == 0) {
-//            std::cout << '\r' << "Rendering " << 100 * col / (pixelNumberWidth - 1) << "%";
-//            std::cout.flush();
-//        }
     }
     taskQueue.close();
     for (std::thread &thread : threads) {
@@ -114,7 +110,7 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
     auto obstacleColor = obstacle->getColorAt(hitPoint);
     double surface = 1 - obstacleMaterial.reflectance - obstacleMaterial.transparency;
     surface = std::max(0., surface);//todo: a + b + c = 1; diffuse is also property
-    Color finalColor;
+    Color finalColor = CL_BLACK;
 
 #ifdef ENABLE_ILLUMINATION
     finalColor = computeDiffuseColor(obstacle, hitPoint, ray);
@@ -126,12 +122,13 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
 #ifdef ENABLE_REFRACTION
     finalColor += (computeRefractionColor(obstacle, hitPoint, ray, restDepth) * obstacleColor)
                   * obstacleMaterial.transparency;
-//    double energy = sqrt(pureRefracted.r * pureRefracted.r + pureRefracted.g * pureRefracted.g + pureRefracted.b * pureRefracted.b) / sqrt(3);
-//    finalColor +=  obstacleMaterial.color * (1 - obstacleMaterial.transparency) * energy +
-//             pureRefracted * obstacleMaterial.transparency;
 #endif  // ENABLE_REFRACTION
 
 #endif  // ENABLE_ILLUMINATION
+
+#ifdef ENABLE_INDIRECT_ILLUMINATION
+    finalColor += computeIndirectIllumination(obstacle, hitPoint) * obstacleColor;
+#endif  // ENABLE_INDIRECT_ILLUMINATION
     return finalColor;
 }
 
@@ -203,6 +200,7 @@ Color Scene::computeRefractionColor(Object3d *object, const Point &point, const 
 }
 
 void Scene::worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture) {
+    int n = 0;
     while (true) {
         Task result;
         if ((tasks.popOrWait()).some(result)) {
@@ -218,6 +216,11 @@ void Scene::worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture) {
                     assert(false);
             }
             picture.setAt(result.col, result.row, color);
+            // Отображение прогресса.
+//            if (n++ % 1000 == 0) {
+//                std::cout << '\r' << "Rendering " << 100 * n / (pixelNumberWidth * pixelNumberHeight) << "%";
+//                std::cout.flush();
+//            }
         } else {
             if (tasks.isClosed()) {
                 break;
