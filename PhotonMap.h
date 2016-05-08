@@ -2,14 +2,18 @@
 #define RAYTRACER_PHOTONMAP_H
 
 #include <vector>
+#include <algorithm>
 #include "KdTree.h"
 #include "LightSources/LightSource.h"
 #include "Objects/Object3d.h"
 
+// todo : parallel?
+// todo : projection map
 class PhotonMap {
 public:
     PhotonMap(const std::vector<LightSource *> &lights, const KdTree &kdTree, unsigned long photonNumber) {
-        // todo: надписи и progress bar
+        // todo: time и progress bar
+        std::cout << "\nBuilding Photon Map (" << photonNumber << " photons)...\n";
         double totalPower = 0;
         for (LightSource *light : lights) {
             totalPower += light->getBrightness();
@@ -20,18 +24,90 @@ public:
         }
         // Генерация и трассировка фотонов.
         for (LightSource *light : lights) {
-            long photonsPerThisLight = long (light->getBrightness() * photonNumber / totalPower);
+            long photonsPerThisLight = long(light->getBrightness() * photonNumber / totalPower);
             for (long i = 0; i < photonsPerThisLight; ++i) {
                 auto photon = light->emitPhoton();
                 tracePhoton(kdTree, photon, 2);
             }
         }
         // Построение фотонного kd-дерева.
+        generalTree = KdTree(
+                std::vector<GeometricShape *>(storedPhotons.begin(), storedPhotons.end())); // todo: may be improve
+        std::cout << "Photon Map has been built\n";
     }
 
 
-    const std::vector<Photon> &getStoredPhotons() const {
+    const std::vector<Photon *> &getStoredPhotons() const {
         return storedPhotons;
+    }
+
+    std::vector<Photon *> locatePhotons(const Point &testPoint, double maxDistance, size_t number) {
+        struct HeapNode {
+
+            HeapNode(double sqrDistance_, Photon *photon_) : sqrDistance(sqrDistance_), photon(photon_) { }
+
+            double sqrDistance;
+            Photon* photon;
+            bool operator<(const HeapNode &other) {
+                return sqrDistance < other.sqrDistance;
+            }
+        };
+        Point point(testPoint);
+        double sqrMaxDistance = maxDistance * maxDistance;
+        std::vector<HeapNode> heap;
+        KdNode* node = generalTree.getRoot();
+        if (node == nullptr || number == 0) {
+            return std::vector<Photon*>();
+        }
+        std::stack<KdNode *> stack;
+        while (true) {
+            if (node->isLeaf()) {
+                // Пора считать.
+                for (GeometricShape *shape : node->getObjects()) {
+                    auto photon = dynamic_cast<Photon*> (shape);
+                    double sqrDistance = Vector3d(photon->getRay().getOrigin(), point).lengthSquared();
+                    if (sqrDistance < sqrMaxDistance) {
+                        heap.emplace_back(sqrDistance, photon);
+                        std::push_heap(heap.begin(), heap.end());
+                        // Если уже набрали сколько нужно, то нужно отсекать заведомо плохие варианты.
+                        if (heap.size() > number) {
+                            sqrMaxDistance = heap.front().sqrDistance;
+                            std::pop_heap(heap.begin(), heap.end());
+                            heap.pop_back();
+                        }
+                    }
+                }
+            } else {
+                double distanceToPlane = point[node->getSplitAxis()] - node->getSplitPoint();
+//                if (distanceToPlane * distanceToPlane > maxDistance * maxDistance) {
+//                    continue;
+//                }
+                if (distanceToPlane < 0) {
+                    // Сначала ищем в leftBox.
+                    stack.push(node->getRightPtr().get());
+                    node = node->getLeftPtr().get();
+                    continue;
+                } else {
+                    // Сначала ищем в rightBox.
+                    stack.push(node->getLeftPtr().get());
+                    node = node->getRightPtr().get();
+                    continue;
+                }
+            }
+
+            // Если ничего не найдено то вернуться на уровень выше.
+            if (stack.empty()) {
+                break;
+            }
+            node = stack.top();
+            stack.pop();
+        }
+        std::vector<Photon *> result;
+        result.reserve(heap.size());
+        for (HeapNode &heapNode : heap) {
+            result.push_back(heapNode.photon);
+        }
+        return result;
     }
 
 private:
@@ -59,17 +135,27 @@ private:
             Photon reflectedPhoton(reflectedRay, photon.getColor());
             tracePhoton(objects, reflectedPhoton, restDepth - 1);
         } else {
-//            if (randomVariable < obstacleMaterial.reflectance + obstacleMaterial.transparency) {
-//                // Решается, что луч преломился.
-//            }
+            if (randomVariable < obstacleMaterial.reflectance + obstacleMaterial.transparency) {
+                // Решается, что луч преломился.
+                auto refractionDirection = photon.getRay().refractRay(obstacle->getNormal(hitPoint),
+                                                                      obstacleMaterial.refractiveIndex);
+                if (!Vector3d::isNullVector(refractionDirection)) {
+                    Ray refractedRay(hitPoint, refractionDirection);
+                    refractedRay.push();
+                    Photon refractedPhoton(refractedRay, photon.getColor());
+                    tracePhoton(objects, refractedPhoton, restDepth - 1);
+                }
+            }
 
-            storedPhotons.push_back(Photon(hitPoint, photon.getDirection(), photon.getColor()));
+            storedPhotons.push_back(new Photon(hitPoint, photon.getDirection(), photon.getColor()));
         }
 
     }
 
+
+
     KdTree generalTree;
-    std::vector<Photon> storedPhotons;
+    std::vector<Photon *> storedPhotons;
     std::default_random_engine randomEngine;
 };
 

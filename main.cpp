@@ -33,9 +33,14 @@ int main(int argc, char *argv[]) {
     };
     Scene::mergeObjects(objects, std::move(manual));
 
-    PhotonMap map(lights, KdTree(std::vector<GeometricShape *>(objects.begin(), objects.end())), 100000);
-    for (const Photon &photon : map.getStoredPhotons()) {
-        objects.push_back(new Sphere(photon.getRay().getOrigin(), 0.05, Material()));
+    PhotonMap map(lights, KdTree(std::vector<GeometricShape *>(objects.begin(), objects.end())), 1000000);
+
+    auto KNN = map.locatePhotons(Point(-3, 2, 4), 3, 1);
+    for (Photon *photon : KNN) {
+        objects.push_back(new Sphere(photon->getRay().getOrigin(), 0.1, Material(CL_GREEN)));
+    }
+    for (Photon *photon : map.getStoredPhotons()) {
+        objects.push_back(new Sphere(photon->getRay().getOrigin(), 0.05, Material()));
     }
 
     Picture picture;

@@ -6,7 +6,7 @@
 #include "../Picture.h"
 #include "../Geometry/Geometry.h"
 
-class Photon {
+class Photon : public GeometricShape { //todo: move to PhotonMapper
 public:
 
     Photon() {}
@@ -26,6 +26,18 @@ public:
 
     const Color &getColor() const {
         return color;
+    }
+
+    virtual Vector3d getNormal(const Point &point) const {
+        return Vector3d();
+    }
+
+    virtual bool intersectRay(const Ray &ray, Point &intersection) const {
+        return false;
+    }
+
+    virtual BoundingBox getBoundingBox() const {
+        return BoundingBox({ray.getOrigin()});
     }
 
 private:

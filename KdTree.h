@@ -110,6 +110,11 @@ public:
         this->root = std::move(other.root);
     }
 
+    KdTree &operator=(KdTree &&other) {
+        this->root = std::move(other.root);
+        return *this;
+    }
+
     KdNode *const getRoot() const {
         return root.get();
     }
