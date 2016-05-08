@@ -4,10 +4,12 @@
 #include <vector>
 #include "KdTree.h"
 #include "LightSources/LightSource.h"
+#include "Objects/Object3d.h"
 
 class PhotonMap {
 public:
     PhotonMap(const std::vector<LightSource *> &lights, const KdTree &kdTree, unsigned long photonNumber) {
+        // todo: надписи и progress bar
         double totalPower = 0;
         for (LightSource *light : lights) {
             totalPower += light->getBrightness();
@@ -39,7 +41,7 @@ private:
         }
         // Используя Kd дерево ищем пересечения со сценой.
         Point hitPoint;
-        Object3d *obstacle = objects.findObstacle(photon.getRay(), hitPoint);
+        Object3d *obstacle = dynamic_cast<Object3d *> (objects.findObstacle(photon.getRay(), hitPoint));
 
         // Если не нашли пересечений.
         if (obstacle == nullptr) {

@@ -45,7 +45,7 @@ public:
             screenBottomRight(screenBottomRight),
             pixelNumberWidth(pixelNumberWidth),
             pixelNumberHeight(pixelNumberHeight),
-            objects(objects),
+            objects(std::vector<GeometricShape *>(objects.begin(), objects.end())),
             objectList(std::move(objects)),
             lights(std::move(lights)) { }
 

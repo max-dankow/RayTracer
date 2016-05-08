@@ -5,7 +5,7 @@
 #include <vector>
 #include <stack>
 #include "Geometry/Geometry.h"
-#include "Objects/Object3d.h"
+#include "Geometry/GeometricShape.h"
 
 using std::unique_ptr;
 
@@ -24,11 +24,11 @@ public:
     KdNode() { }
 
     KdNode(const BoundingBox &box,
-           const std::vector<Object3d *> &objects) :
+           const std::vector<GeometricShape *> &objects) :
             box(box), objects(objects) { }
 
     KdNode(const BoundingBox &box,
-           std::vector<Object3d *> &&objects) :
+           std::vector<GeometricShape *> &&objects) :
             box(box), objects(std::move(objects)) { }
 
     const BoundingBox &getBox() const {
@@ -67,7 +67,7 @@ public:
         return leftPtr;
     }
 
-    const std::vector<Object3d *> &getObjects() const {
+    const std::vector<GeometricShape *> &getObjects() const {
         return objects;
     }
 
@@ -92,7 +92,7 @@ private:
     float splitPoint;
     // Указатели на поддеревья.
     unique_ptr<KdNode> leftPtr, rightPtr;
-    std::vector<Object3d *> objects;
+    std::vector<GeometricShape *> objects;
 };
 
 
@@ -102,7 +102,7 @@ public:
         root.reset(nullptr);
     }
 
-    KdTree(const std::vector<Object3d *> &objects);
+    KdTree(const std::vector<GeometricShape *> &objects);
 
     KdTree(const KdTree &) = delete;
 
@@ -114,7 +114,7 @@ public:
         return root.get();
     }
 
-    Object3d * findObstacle(const Ray &ray, Point &hitPoint) const;
+    GeometricShape *findObstacle(const Ray &ray, Point &hitPoint) const;
 
 private:
     // Рекурсивное разбиение узла.
@@ -122,9 +122,9 @@ private:
 
     // Подсчет эвристики площади поверхности sah.
     double surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
-                                const std::vector<Object3d *> &objects);
+                                const std::vector<GeometricShape *> &objects);
 
-    unsigned long countPrimitivesInBox(const std::vector<Object3d *> &objects,
+    unsigned long countPrimitivesInBox(const std::vector<GeometricShape *> &objects,
                                        const BoundingBox &box);
 
     size_t getRegularGridCount() const {
@@ -141,9 +141,9 @@ private:
 
     bool findSplitByGridFast(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
 
-    Object3d * checkIntersection(const Ray &ray,
-                                 const std::vector<Object3d *> &objectList,
-                                 Point &intersection) const;
+    GeometricShape *checkIntersection(const Ray &ray,
+                                      const std::vector<GeometricShape *> &objectList,
+                                      Point &intersection) const;
 
     const SplitMethod splitMethod = SPLIT_ADAPTIVE;
     static const size_t REGULAR_GRID_COUNT = 32;

@@ -6,6 +6,7 @@
 #include "../Geometry/Vector3d.h"
 #include "../Geometry/Ray.h"
 #include "../Geometry/BoundingBox.h"
+#include "../Geometry/GeometricShape.h"
 
 struct Material {
 
@@ -27,18 +28,12 @@ struct Material {
 };
 
 // Интерфейс представляет обобщенный объект сцены.
-class Object3d {
+class Object3d : public GeometricShape {
 public:
 
     Object3d(const Material &material) : material(material) { }
 
-    virtual Vector3d getNormal(const Point &) const = 0;
-
-    virtual bool intersectRay(const Ray &, Point &intersection) const = 0;
-
     virtual Color getColorAt(const Point &point) const = 0;
-
-    virtual BoundingBox getBoundingBox() const = 0;
 
     virtual ~Object3d() {}
 

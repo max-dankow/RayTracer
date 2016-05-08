@@ -103,7 +103,7 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
 
     // Используя Kd дерево ищем пересечения со сценой.
     Point hitPoint;
-    Object3d *obstacle = objects.findObstacle(ray, hitPoint);
+    Object3d *obstacle = dynamic_cast<Object3d*> (objects.findObstacle(ray, hitPoint));
 
     // Если не нашли пересечений.
     if (obstacle == nullptr) {
@@ -152,7 +152,7 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
         lightRay.push();
 
         Point obstacleHitPoint;
-        Object3d *obstacle = objects.findObstacle(lightRay, obstacleHitPoint);
+        Object3d *obstacle = dynamic_cast<Object3d *> (objects.findObstacle(lightRay, obstacleHitPoint));
         // Если луч не прервался перпятствием, находящимся ДО источника, то учтем его вклад в освещенность.
         if (obstacle == nullptr
             || ((obstacleHitPoint - point).lengthSquared() > sqrDistanceToLight)
