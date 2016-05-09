@@ -3,13 +3,16 @@
 #include <thread>
 #include "Scene.h"
 
-//#define ENABLE_ILLUMINATION
-//#define ENABLE_REFLECTION
-//#define ENABLE_REFRACTION
-#define ENABLE_INDIRECT_ILLUMINATION
+#define ENABLE_ILLUMINATION
+#define ENABLE_REFLECTION
+#define ENABLE_REFRACTION
+//#define ENABLE_INDIRECT_ILLUMINATION
 
-//#define ENABLE_ANTIALIASING
+#define ENABLE_ANTIALIASING
 //#define HIGHLIGHT_ALIASING
+
+//todo : comand line args instead of defines
+
 
 Picture Scene::render() {
     Vector3d colVector = Vector3d(screenBottomRight.x - screenTopLeft.x,
@@ -113,7 +116,7 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
     Color finalColor = CL_BLACK;
 
 #ifdef ENABLE_ILLUMINATION
-    finalColor = computeDiffuseColor(obstacle, hitPoint, ray);
+    finalColor = computeDiffuseColor(obstacle, hitPoint, ray) * surface;
 
 #ifdef ENABLE_REFLECTION
     finalColor += computeReflectionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial.reflectance;
@@ -127,13 +130,16 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
 #endif  // ENABLE_ILLUMINATION
 
 #ifdef ENABLE_INDIRECT_ILLUMINATION
-    finalColor += computeIndirectIllumination(obstacle, hitPoint) * obstacleColor;
+    finalColor += computeIndirectIllumination(obstacle, hitPoint);// * obstacleColor * (1 - alpha);
 #endif  // ENABLE_INDIRECT_ILLUMINATION
     return finalColor;
 }
 
 Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray &viewRay) {
-    double totalBrightness = backgroundIllumination;
+//    double totalR = 0;
+//    double totalG = 0;
+//    double totalB = 0; // todo: extend Color to deal with such hyper colors
+    Color total(CL_BLACK);
     double dotNormalRay = Vector3d::dotProduct(object->getNormal(point), viewRay.getDirection());
     auto material = object->getMaterial();
     for (const LightSource *light : lights) {
@@ -161,11 +167,13 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
                 fong = std::pow(fongCos, material.phongPower);
             }
             double brightness = dotNormalLight;
-            totalBrightness += (brightness * material.lambert + fong * material.phong)
-                               * light->getBrightness() / sqrDistanceToLight;
+            total = total + light->getColor()
+                            * ((brightness * material.lambert + fong * material.phong) * light->getBrightness()
+                               / sqrDistanceToLight);
         }
     }
-    return object->getColorAt(point) * totalBrightness;
+    total = total + computeIndirectIllumination(object, point);
+    return object->getColorAt(point) * total;
 }
 
 Color Scene::computeReflectionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth) {

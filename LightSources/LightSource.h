@@ -28,6 +28,10 @@ public:
         return color;
     }
 
+    void setColor(const Color &color) {
+        Photon::color = color;
+    }
+
     virtual Vector3d getNormal(const Point &point) const {
         return Vector3d();
     }

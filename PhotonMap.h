@@ -34,11 +34,13 @@ public:
             std::cout << "Photon Map has been built, no lights\n";
             return;
         }
+        tracePhoton(kdTree, Photon(Point(0, 0, 30), Vector3d(0, 0, -1), CL_WHITE), 3);
         // Генерация и трассировка фотонов.
         for (LightSource *light : lights) {
             long photonsPerThisLight = long(light->getBrightness() * photonNumber / totalPower);
             for (long i = 0; i < photonsPerThisLight; ++i) {
                 auto photon = light->emitPhoton();
+                photon.setColor(photon.getColor() * (1000. / photonsPerThisLight));
                 tracePhoton(kdTree, photon, 3);
             }
         }
@@ -159,7 +161,7 @@ private:
             auto reflectedDirection = photon.getRay().reflectRay(obstacle->getNormal(hitPoint));
             Ray reflectedRay(hitPoint, reflectedDirection);
             reflectedRay.push();
-            Photon reflectedPhoton(reflectedRay, photon.getColor());
+            Photon reflectedPhoton(reflectedRay, photon.getColor())/* * obstacle->getColorAt(hitPoint))*/;
             tracePhoton(objects, reflectedPhoton, restDepth - 1);
         } else {
             if (randomVariable < obstacleMaterial.reflectance + obstacleMaterial.transparency) {
@@ -167,13 +169,16 @@ private:
                 auto refractionDirection = photon.getRay().refractRay(obstacle->getNormal(hitPoint),
                                                                       obstacleMaterial.refractiveIndex);
                 if (!Vector3d::isNullVector(refractionDirection)) {
+//                    std::cerr << restDepth << " ref\n";
                     Ray refractedRay(hitPoint, refractionDirection);
                     refractedRay.push();
-                    Photon refractedPhoton(refractedRay, (photon.getColor() * obstacle->getColorAt(hitPoint)));
+                    Photon refractedPhoton(refractedRay, photon.getColor() * obstacle->getColorAt(hitPoint));
                     tracePhoton(objects, refractedPhoton, restDepth - 1);
                 }
             } else {
-                storedPhotons.push_back(new Photon(hitPoint, photon.getDirection(), photon.getColor()));
+//                if (restDepth < 3) {
+                    storedPhotons.push_back(new Photon(hitPoint, photon.getDirection(), photon.getColor()));
+//                }
             }
         }
 

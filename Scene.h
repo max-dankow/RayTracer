@@ -86,19 +86,23 @@ private:
     Color computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
 
     Color computeIndirectIllumination(Object3d *object, const Point &point) {
-        auto KNN = photonMap.locatePhotons(point, 1, 1000);
+        auto normal = object->getNormal(point);
+        auto KNN = photonMap.locatePhotons(point, 1, 500);
         if (KNN.empty()) {
             return CL_BLACK;
         }
         double r=0, g=0, b=0;
         for (Photon *photon : KNN) {
-            r += photon->getColor().r;
-            g += photon->getColor().g;
-            b += photon->getColor().b;
+            double k = -Vector3d::dotProduct(normal, photon->getRay().getDirection().normalize());
+            if (k > 0) {
+                r += photon->getColor().r * k;
+                g += photon->getColor().g * k;
+                b += photon->getColor().b * k;
+            }
         }
 //        std::cerr << r << ' ' << g << ' ' << b << ' ' << KNN.size() << '\n';
         double gatheringRadiusSqr = Vector3d(KNN.front()->getRay().getOrigin(), point).lengthSquared();
-        double sphereArea = 4. * M_PI * gatheringRadiusSqr;
+        double sphereArea = M_PI * gatheringRadiusSqr;
         return Color(r / sphereArea, g / sphereArea, b / sphereArea);
     }
 
