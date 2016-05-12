@@ -156,7 +156,7 @@ private:
         // Русская рулетка.
         std::uniform_real_distribution<float> distribution(0, 1);
         float randomVariable = distribution(randomEngine);
-        if (randomVariable < obstacleMaterial.reflectance) {
+        if (randomVariable < obstacleMaterial->reflectance) {
             // Решается, что луч отразился.
             auto reflectedDirection = photon.getRay().reflectRay(obstacle->getNormal(hitPoint));
             Ray reflectedRay(hitPoint, reflectedDirection);
@@ -164,10 +164,10 @@ private:
             Photon reflectedPhoton(reflectedRay, photon.getColor())/* * obstacle->getColorAt(hitPoint))*/;
             tracePhoton(objects, reflectedPhoton, restDepth - 1);
         } else {
-            if (randomVariable < obstacleMaterial.reflectance + obstacleMaterial.transparency) {
+            if (randomVariable < obstacleMaterial->reflectance + obstacleMaterial->transparency) {
                 // Решается, что луч преломился.
                 auto refractionDirection = photon.getRay().refractRay(obstacle->getNormal(hitPoint),
-                                                                      obstacleMaterial.refractiveIndex);
+                                                                      obstacleMaterial->refractiveIndex);
                 if (!Vector3d::isNullVector(refractionDirection)) {
 //                    std::cerr << restDepth << " ref\n";
                     Ray refractedRay(hitPoint, refractionDirection);

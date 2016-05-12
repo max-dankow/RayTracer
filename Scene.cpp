@@ -8,7 +8,7 @@
 #define ENABLE_REFRACTION
 //#define ENABLE_INDIRECT_ILLUMINATION
 
-#define ENABLE_ANTIALIASING
+//#define ENABLE_ANTIALIASING
 //#define HIGHLIGHT_ALIASING
 
 //todo : comand line args instead of defines
@@ -111,7 +111,7 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
 
     auto obstacleMaterial = obstacle->getMaterial();
     auto obstacleColor = obstacle->getColorAt(hitPoint);
-    double surface = 1 - obstacleMaterial.reflectance - obstacleMaterial.transparency;
+    double surface = 1 - obstacleMaterial->reflectance - obstacleMaterial->transparency;
     surface = std::max(0., surface);//todo: a + b + c = 1; diffuse is also property
     Color finalColor = CL_BLACK;
 
@@ -119,12 +119,12 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
     finalColor = computeDiffuseColor(obstacle, hitPoint, ray) * surface;
 
 #ifdef ENABLE_REFLECTION
-    finalColor += computeReflectionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial.reflectance;
+    finalColor += computeReflectionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial->reflectance;
 #endif  // ENABLE_REFLECTION
 
 #ifdef ENABLE_REFRACTION
     finalColor += (computeRefractionColor(obstacle, hitPoint, ray, restDepth) * obstacleColor)
-                  * obstacleMaterial.transparency;
+                  * obstacleMaterial->transparency;
 #endif  // ENABLE_REFRACTION
 
 #endif  // ENABLE_ILLUMINATION
@@ -164,11 +164,11 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
             double fong = 0;
             if (!Vector3d::isNullVector(lightReflectedDirection)) {
                 double fongCos = std::max(-Vector3d::dotProduct(lightReflectedDirection, viewRay.getDirection()), 0.);
-                fong = std::pow(fongCos, material.phongPower);
+                fong = std::pow(fongCos, material->phongPower);
             }
             double brightness = dotNormalLight;
             total = total + light->getColor()
-                            * ((brightness * material.lambert + fong * material.phong) * light->getBrightness()
+                            * ((brightness * material->lambert + fong * material->phong) * light->getBrightness()
                                / sqrDistanceToLight);
         }
     }
@@ -177,14 +177,14 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
 }
 
 Color Scene::computeReflectionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth) {
-    if (Geometry::areDoubleEqual(object->getMaterial().reflectance, 0)) {
+    if (Geometry::areDoubleEqual(object->getMaterial()->reflectance, 0)) {
         return CL_BLACK;
     }
 
     // Если имеет место отражение, продолжаем.
     Vector3d reflectionDirection = viewRay.reflectRay(object->getNormal(point));
     if (!Vector3d::isNullVector(reflectionDirection)) {
-        Ray reflectionRay(point, reflectionDirection, (float) (viewRay.getPower() * object->getMaterial().reflectance));
+        Ray reflectionRay(point, reflectionDirection, (float) (viewRay.getPower() * object->getMaterial()->reflectance));
         Color obstacleColor = computeRayColor(reflectionRay, restDepth - 1);
         return obstacleColor;
     }
@@ -192,14 +192,14 @@ Color Scene::computeReflectionColor(Object3d *object, const Point &point, const 
 }
 
 Color Scene::computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth) {
-    if (Geometry::areDoubleEqual(object->getMaterial().transparency, 0)) {
+    if (Geometry::areDoubleEqual(object->getMaterial()->transparency, 0)) {
         return CL_BLACK;
     }
     Vector3d refractionDirection =
-            viewRay.refractRay(object->getNormal(point), object->getMaterial().refractiveIndex);
+            viewRay.refractRay(object->getNormal(point), object->getMaterial()->refractiveIndex);
     // Если имеет место преломление, продолжаем.
     if (!Vector3d::isNullVector(refractionDirection)) {
-        Ray refractionRay(point, refractionDirection, (float) (viewRay.getPower() * object->getMaterial().transparency));
+        Ray refractionRay(point, refractionDirection, (float) (viewRay.getPower() * object->getMaterial()->transparency));
         refractionRay.push();
         Color obstacleColor = computeRayColor(refractionRay, restDepth - 1);
         return obstacleColor;

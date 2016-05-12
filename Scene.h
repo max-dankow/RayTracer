@@ -39,7 +39,8 @@ public:
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
           std::vector<Object3d *> &&objects,
-          std::vector<LightSource *> &&lights, size_t photonsNumber = 1000000) :
+          std::vector<LightSource *> &&lights,
+          size_t photonsNumber = 1000000) :
             viewPoint(viewPoint),
             screenTopLeft(screenTopLeft),
             screenBottomRight(screenBottomRight),

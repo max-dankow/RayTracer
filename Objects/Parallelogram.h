@@ -8,7 +8,7 @@ class Parallelogram : public Object3d {
 public:
 
     Parallelogram(const std::array<Point, 3> inputPoints,
-                  const Material &material = Material()) : Object3d(material) {
+                  const Material *material) : Object3d(material) {
         for (size_t i = 0; i < 3; ++i) { //todo: krasivee
             vertices[i] = inputPoints[i];
         }
@@ -43,7 +43,7 @@ public:
     }
 
     virtual Color getColorAt(const Point &point = Point()) const {
-        return material.color;
+        return material->color;
     }
 
     virtual BoundingBox getBoundingBox() const {

@@ -9,9 +9,9 @@
 class Sphere : public Object3d{
 public:
 
-    Sphere(const Material &material) : Object3d(material) {}
+    Sphere(const Material *material) : Object3d(material) {}
 
-    Sphere(const Point &center, double radius, const Material &material) : Object3d(material),
+    Sphere(const Point &center, double radius, const Material *material) : Object3d(material),
             center(center), radius(radius), radiusSquared(radius * radius) {
         assert(radius > 0 && !Geometry::areDoubleEqual(radius, 0));
     }
@@ -34,7 +34,7 @@ public:
     }
 
     virtual Color getColorAt(const Point &point) const {
-        return material.color;
+        return material->color;
     }
 
     virtual bool intersectRay(const Ray &ray, Point &intersection) const;

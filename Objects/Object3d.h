@@ -31,19 +31,24 @@ struct Material {
 class Object3d : public GeometricShape {
 public:
 
-    Object3d(const Material &material) : material(material) { }
+    Object3d(const Material *material) : material(material) {
+        assert(material != nullptr);
+    }
 
     virtual Color getColorAt(const Point &point) const = 0;
 
     virtual ~Object3d() {}
 
-    const Material &getMaterial() const {
+    const Material *getMaterial() const {
         return material;
     }
 
 protected:
-    Material material;
+    const Material* material;
 };
+
+static Material NO_MATERIAL = Material();
+
 
 
 #endif //RAYTRACER_OBJECT3D_H

@@ -10,7 +10,7 @@
 class Triangle3d : public Object3d {
 public:
 
-    Triangle3d(const Point &a, const Point &b, const Point &c, const Material &material = Material());
+    Triangle3d(const Point &a, const Point &b, const Point &c, const Material *material);
 
     virtual Vector3d getNormal(const Point &point) const;
 

@@ -7,7 +7,7 @@
 // todo: все неправильно
 class PlaneQuadrangle : public Object3d {
 public:
-    PlaneQuadrangle(const std::array<Point, 4> &vertices, const Material &material) :
+    PlaneQuadrangle(const std::array<Point, 4> &vertices, const Material *material) :
             Object3d(material), vertices(vertices) {
         std::vector<Vector3d> crossProducts(4);
         for (size_t i = 0; i < 4; ++i) {
@@ -62,7 +62,7 @@ public:
     }
 
     virtual Color getColorAt(const Point &point) const {
-        return material.color;
+        return material->color;
     }
 
     virtual BoundingBox getBoundingBox() const {
