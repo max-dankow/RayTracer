@@ -13,8 +13,6 @@ public:
     std::vector<Object3d*> readObjects(const std::string &path);
 
     virtual SceneData readScene(const std::string &path);
-
-
 };
 
 SceneData TextSTLReader::readScene(const std::string &path) {
@@ -64,7 +62,8 @@ std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {
 //            } else {
 //                color = Color(0, 0.7, 0);
 //            }
-            objects.push_back(new Triangle3d(a, b, c, &NO_MATERIAL));
+            Material* material = new Material(color, reflectance);//todo: free the memory
+            objects.push_back(new Triangle3d(a, b, c, material));
             // endloop
             input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             // endfacet

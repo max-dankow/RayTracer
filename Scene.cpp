@@ -6,9 +6,9 @@
 #define ENABLE_ILLUMINATION
 #define ENABLE_REFLECTION
 #define ENABLE_REFRACTION
-//#define ENABLE_INDIRECT_ILLUMINATION
+#define ENABLE_INDIRECT_ILLUMINATION
 
-#define ENABLE_ANTIALIASING
+//#define ENABLE_ANTIALIASING
 //#define HIGHLIGHT_ALIASING
 
 //todo : comand line args instead of defines
@@ -126,10 +126,6 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
 #endif  // ENABLE_REFRACTION
 
 #endif  // ENABLE_ILLUMINATION
-
-#ifdef ENABLE_INDIRECT_ILLUMINATION
-    finalColor += computeIndirectIllumination(obstacle, hitPoint);// * obstacleColor * (1 - alpha);
-#endif  // ENABLE_INDIRECT_ILLUMINATION
     return finalColor;
 }
 
@@ -170,7 +166,11 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
                                / sqrDistanceToLight);
         }
     }
+
+#ifdef ENABLE_INDIRECT_ILLUMINATION
     total = total + computeIndirectIllumination(object, point);
+#endif  // ENABLE_INDIRECT_ILLUMINATION
+
     return object->getColorAt(point) * total;
 }
 

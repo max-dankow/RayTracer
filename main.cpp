@@ -8,13 +8,20 @@
 #include "LightSources/PointLight.h"
 #include "PhotonMap.h"
 #include "SceneReader/RTReader.h"
+#include <ctime>
+#include "Painter/PNGPainter.h"
+
+std::string createFileName(const std::string &extension) {
+    std::time_t result = std::time(nullptr);
+    std::string name(std::asctime(std::localtime(&result)));
+    name.pop_back();
+    return name + extension;
+}
 
 // todo : перейти на float
 int main(int argc, char *argv[]) {
     RTReader readerRT;
     TextSTLReader reader;
-    CairoPainter cairoPainter(800, 600, "Ray Tracer");
-
     /// LIGHTS
 //    std::vector<LightSource *> lights = {
 ////            new PointLight(Point(5, 1, 0), 25, CL_RED),
@@ -29,6 +36,7 @@ int main(int argc, char *argv[]) {
 //    objects = reader.readObjects("./STLScenes/invader.stl");
     SceneData sceneData = readerRT.readScene("./RTScenes/example.rt");
     Scene::mergeObjects(objects, std::move(sceneData.objects));
+//    Scene::mergeObjects(objects, reader.readObjects("./STLScenes/floor.stl"));
 
     /// OTHER
 //    std::vector<Object3d *> manual = {
@@ -40,7 +48,7 @@ int main(int argc, char *argv[]) {
 //            new Triangle3d(Point(0, 1, 25), Point(-2, -1, 25), Point(-2, 1, 25), new Material(CL_GREEN, 0, 1, 0.3)),
 //            new Sphere(Point(3, 2, 13), 3, new Material(CL_RED, 0.9)),
 //            new Sphere(Point(-3, 2, 16), 3, new Material(CL_RED + CL_GREEN, 0, 1, 0.7))
-//    }; //todo: fuck the memory
+//    };
 //    Scene::mergeObjects(objects, std::move(manual));
 
 
@@ -54,9 +62,12 @@ int main(int argc, char *argv[]) {
     Scene scene(sceneData.camera,
                 std::move(objects), // todo: consume SceneData
                 std::move(sceneData.lights),
-                5000000); // 5000000
+                1000000); // 5000000
     picture = scene.render(800, 600);
 
-    cairoPainter.showPicture(picture);
+//    CairoPainter cairoPainter(800, 600, "Ray Tracer");
+//    cairoPainter.showPicture(picture);
+    PNGPainter painter(800, 600, createFileName(".png"));
+    painter.showPicture(picture);
     return 0;
 }
