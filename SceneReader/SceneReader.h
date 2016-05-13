@@ -28,6 +28,11 @@ struct SceneData {
         material = nullptr;
     }
 
+    void addLightSource(LightSource* &&lightSource) {
+        lights.push_back(lightSource);
+        lightSource = nullptr;
+    }
+
     Camera camera;
     std::vector<Object3d *> objects;
     std::vector<LightSource *> lights;

@@ -8,12 +8,12 @@
 #define ENABLE_REFRACTION
 //#define ENABLE_INDIRECT_ILLUMINATION
 
-//#define ENABLE_ANTIALIASING
+#define ENABLE_ANTIALIASING
 //#define HIGHLIGHT_ALIASING
 
 //todo : comand line args instead of defines
 
-Picture Scene::render() {
+Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
     Vector3d colVector = Vector3d(camera.topLeft, camera.topRight) / pixelNumberWidth;
     Vector3d rowVector = Vector3d(camera.topLeft, camera.bottomLeft) / pixelNumberHeight;
     Picture picture(pixelNumberWidth, pixelNumberHeight);
@@ -56,8 +56,8 @@ Picture Scene::render() {
                                       picture.getAt(col - 1, row),
                                       picture.getAt(col, row - 1)}, ignoreColor)) {
 #ifndef HIGHLIGHT_ALIASING
-                Point newTopLeft(colVector * col + rowVector * row + screenTopLeft);
-                Point newBottomRight(colVector * (col + 1) + rowVector * (row + 1) + screenTopLeft);
+                Point newTopLeft(colVector * col + rowVector * row + camera.topLeft);
+                Point newBottomRight(colVector * (col + 1) + rowVector * (row + 1) + camera.topLeft);
                 AAtaskQueue.push(Task(Task::TaskType::AA, col, row, Point(), newTopLeft, newBottomRight));
 //                newPic.setAt(col, row, mixSubPixels(newTopLeft, newBottomRight, 0));
 #endif  //  HIGHLIGHT_ALIASING

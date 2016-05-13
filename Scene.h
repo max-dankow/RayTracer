@@ -46,14 +46,10 @@ class Scene {
 public:
 
     Scene(const Camera &camera,
-          size_t pixelNumberWidth,
-          size_t pixelNumberHeight,
           std::vector<Object3d *> &&objects,
           std::vector<LightSource *> &&lights,
           size_t photonsNumber = 1000000) :
             camera(camera),
-            pixelNumberWidth(pixelNumberWidth),
-            pixelNumberHeight(pixelNumberHeight),
             objectList(std::move(objects)),
             lights(std::move(lights)) {
         this->objects = KdTree(std::vector<GeometricShape *>(objectList.begin(), objectList.end()));
@@ -70,7 +66,7 @@ public:
         }
     }
 
-    Picture render();
+    Picture render(size_t pixelNumberWidth, size_t pixelNumberHeight);
 
     static std::vector<Object3d *> &mergeObjects(std::vector<Object3d *> &base,
                                                  std::vector<Object3d *> &&other) {
@@ -185,7 +181,6 @@ private:
     const size_t THREAD_NUMBER = std::thread::hardware_concurrency();
 
     Camera camera;
-    size_t pixelNumberWidth, pixelNumberHeight;
     Color backgroundColor = CL_BLACK;
     double backgroundIllumination = 0;
 

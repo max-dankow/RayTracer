@@ -16,13 +16,13 @@ int main(int argc, char *argv[]) {
     CairoPainter cairoPainter(800, 600, "Ray Tracer");
 
     /// LIGHTS
-    std::vector<LightSource *> lights = {
-//            new PointLight(Point(5, 1, 0), 25, CL_RED),
-//            new PointLight(Point(-5, 1, 0), 25, CL_GREEN),
-            new PointLight(Point(0, 1, 0), 10, CL_WHITE),
-            new PointLight(Point(0, 0, 30), 30, CL_WHITE),
-//            new PointLight(Point(-3, 3, 7), 20, CL_WHITE),
-    };
+//    std::vector<LightSource *> lights = {
+////            new PointLight(Point(5, 1, 0), 25, CL_RED),
+////            new PointLight(Point(-5, 1, 0), 25, CL_GREEN),
+//            new PointLight(Point(0, 1, 0), 10, CL_WHITE),
+//            new PointLight(Point(0, 0, 30), 30, CL_WHITE),
+////            new PointLight(Point(-3, 3, 7), 20, CL_WHITE),
+//    };
     /// STL MODELS
     std::vector<Object3d *> objects;
 
@@ -51,10 +51,11 @@ int main(int argc, char *argv[]) {
 //    }
 
     Picture picture;
-    Scene scene(sceneData.camera, 800, 600,
+    Scene scene(sceneData.camera,
                 std::move(objects), // todo: consume SceneData
-                std::move(lights), 5000000); // 5000000
-    picture = scene.render();
+                std::move(sceneData.lights),
+                5000000); // 5000000
+    picture = scene.render(800, 600);
 
     cairoPainter.showPicture(picture);
     return 0;

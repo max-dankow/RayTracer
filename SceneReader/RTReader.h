@@ -43,6 +43,23 @@ public:
 
                 continue;
             }
+            if (section == "lights") {
+                // Считаываем источники освещения и нормализационную информацию.
+                string entry;
+                while (getNextWord(input, entry)) {
+                    if (entry == "endlights") {
+                        break;
+                    }
+                    if (entry == "point") {
+                        sceneData.addLightSource(readPointLight(input));
+                        continue;
+                    }
+                    // todo: power normalization
+                    showWarning(entry);
+                }
+
+                continue;
+            }
             if (section == "geometry") {
                 // Считаываем примитивы.
                 string primitive;
@@ -91,6 +108,12 @@ private:
         return true;
     }
 
+    Color readColor(std::ifstream &input) {
+        unsigned r = 255, g = 255, b = 255;
+        input >> r >> g >> b;
+        return Color(((float) r) / 255, ((float) g) / 255, ((float) b) / 255);
+    }
+
     Sphere *readSphere(std::ifstream &input, const std::map<string, const Material *> &materials);
 
     Triangle3d *readTriangle(std::ifstream &input, const std::map<string, const Material *> &materials);
@@ -98,6 +121,32 @@ private:
     PlaneQuadrangle *readQuadrangle(std::ifstream &input, const std::map<string, const Material *> &materials);
 
     Material * readMaterials(std::ifstream &input, std::map<string, const Material *> &materials);
+
+    PointLight * readPointLight(std::ifstream &input) {
+        string property;
+        Point center;
+        double power = 0;
+        Color color = CL_WHITE;
+        while (getNextWord(input, property)) {
+            if (property == "endpoint") {
+                break;
+            }
+            if (property == "coords") {
+                input >> center;
+                continue;
+            }
+            if (property == "power") {
+                input >> power;
+                continue;
+            }
+            if (property == "color") {
+                color = readColor(input);
+                continue;
+            }
+            showWarning(property);
+        }
+        return new PointLight(center, power, color);
+    }
 
     Camera readCamera(std::ifstream &input) {
         string property;
@@ -131,13 +180,12 @@ private:
         std::cerr << "[Warning] Unknown keyword '" << unknownWord << "'\n";
     }
 
-
 };
 
 Material *RTReader::readMaterials(std::ifstream &input, std::map<string, const Material *> &materials) {
     string property;
     string name;
-    unsigned r = 255, g = 255, b = 255;
+    Color color = CL_WHITE;
     double reflectance = 0;
     double refractiveIndex = 0;
     double transparency = 0;
@@ -150,7 +198,7 @@ Material *RTReader::readMaterials(std::ifstream &input, std::map<string, const M
             continue;
         }
         if (property == "color") {
-            input >> r >> g >> b;
+            color = readColor(input);
             continue;
         }
         if (property == "reflect") {
@@ -167,8 +215,7 @@ Material *RTReader::readMaterials(std::ifstream &input, std::map<string, const M
         }
         showWarning(property);
     }
-    Color newColor(((float) r) / 255, ((float) g) / 255, ((float) b) / 255);
-    Material *newMaterial = new Material(newColor, reflectance, refractiveIndex, transparency);
+    Material *newMaterial = new Material(color, reflectance, refractiveIndex, transparency);
     materials.insert({name, newMaterial});
     return newMaterial;
 }
