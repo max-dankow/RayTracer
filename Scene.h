@@ -30,20 +30,28 @@ struct Task {
     Point topLeft, bottomRight;
 };
 
+struct Camera{
+
+    Camera() { }
+
+    Camera(const Point &viewPoint, const Point &topLeft, const Point &bottomLeft, const Point &topRight) :
+            viewPoint(viewPoint), topLeft(topLeft), bottomLeft(bottomLeft), topRight(topRight) { }
+
+    Point viewPoint, topLeft, bottomLeft, topRight;
+};
+
+static Camera DEFAULT_CAMERA(Point(0, 0, -2), Point(2, 1.5, 0), Point(2, -1.5, 0), Point(-2, 1.5, 0));
+
 class Scene {
 public:
 
-    Scene(const Point &viewPoint,
-          const Point &screenTopLeft,
-          const Point &screenBottomRight,
+    Scene(const Camera &camera,
           size_t pixelNumberWidth,
           size_t pixelNumberHeight,
           std::vector<Object3d *> &&objects,
           std::vector<LightSource *> &&lights,
           size_t photonsNumber = 1000000) :
-            viewPoint(viewPoint),
-            screenTopLeft(screenTopLeft),
-            screenBottomRight(screenBottomRight),
+            camera(camera),
             pixelNumberWidth(pixelNumberWidth),
             pixelNumberHeight(pixelNumberHeight),
             objectList(std::move(objects)),
@@ -150,7 +158,7 @@ private:
             for (size_t row = 0; row < AAScale; ++row) {
                 // Смещаем 0.5 чтобы попасть в серединку пикселя.
                 Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + topLeft);
-                auto color = computeRayColor(Ray(viewPoint, pixel - viewPoint), MAX_DEPTH);
+                auto color = computeRayColor(Ray(camera.viewPoint, pixel - camera.viewPoint), MAX_DEPTH);
 //                picture.setAt(col, row,color);
                 colors.push_back(color);
             }
@@ -176,14 +184,7 @@ private:
     static const int MAX_DEPTH = 10;
     const size_t THREAD_NUMBER = std::thread::hardware_concurrency();
 
-    // Точка камеры.
-    Point viewPoint;
-
-    // Верхний левый и правый нижний угол экрана.
-    // Считаем что стороны экрана параллельны осям.
-    // todo: нормальный формат камеры
-    Point screenTopLeft, screenBottomRight;
-
+    Camera camera;
     size_t pixelNumberWidth, pixelNumberHeight;
     Color backgroundColor = CL_BLACK;
     double backgroundIllumination = 0;

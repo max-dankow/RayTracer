@@ -18,7 +18,7 @@ public:
 };
 
 SceneData TextSTLReader::readScene(const std::string &path) {
-    return SceneData(readObjects(path), std::vector<LightSource *>());
+    return SceneData(DEFAULT_CAMERA, readObjects(path), std::vector<LightSource *>());
 }
 
 std::vector<Object3d*> TextSTLReader::readObjects(const std::string &path) {

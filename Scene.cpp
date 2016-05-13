@@ -13,11 +13,9 @@
 
 //todo : comand line args instead of defines
 
-
 Picture Scene::render() {
-    Vector3d colVector = Vector3d(screenBottomRight.x - screenTopLeft.x,
-                                  0, screenBottomRight.z - screenTopLeft.z) / pixelNumberWidth;
-    Vector3d rowVector = Vector3d(0, screenBottomRight.y - screenTopLeft.y, 0) / pixelNumberHeight;
+    Vector3d colVector = Vector3d(camera.topLeft, camera.topRight) / pixelNumberWidth;
+    Vector3d rowVector = Vector3d(camera.topLeft, camera.bottomLeft) / pixelNumberHeight;
     Picture picture(pixelNumberWidth, pixelNumberHeight);
     auto startTime = std::chrono::steady_clock::now();
     SyncQueue<std::vector<Task> > taskQueue;
@@ -30,7 +28,7 @@ Picture Scene::render() {
     for (size_t col = 0; col < pixelNumberWidth; ++col) {
         for (size_t row = 0; row < pixelNumberHeight; ++row) {
             // Смещаем 0.5 чтобы попасть в серединку пикселя.
-            Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + screenTopLeft);
+            Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + camera.topLeft);
             taskQueue.push(Task(Task::TaskType::Trace, col, row, pixel));
         }
     }
@@ -215,7 +213,7 @@ void Scene::worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture) {
             Color color;
             switch (result.type) {
                 case Task::TaskType::Trace:
-                    color = computeRayColor(Ray(viewPoint, result.point - viewPoint), MAX_DEPTH);
+                    color = computeRayColor(Ray(camera.viewPoint, result.point - camera.viewPoint), MAX_DEPTH);
                     break;
                 case Task::TaskType::AA:
                     color = mixSubPixels(result.topLeft, result.bottomRight, 0);

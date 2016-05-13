@@ -3,7 +3,7 @@
 
 #include "Vector3d.h"
 
-// Представляет луч, исходящий из точки origin по вектору направления direction.
+// Представляет луч, исходящий из точки viewPoint по вектору направления direction.
 class Ray {
 public:
 

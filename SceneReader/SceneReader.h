@@ -5,15 +5,16 @@
 #include "../Objects/Object3d.h"
 #include "../LightSources/LightSource.h"
 
-class SceneData {
-public:
-    SceneData() { }
+struct SceneData {
+    SceneData() : camera(DEFAULT_CAMERA) { }
 
-    SceneData(const std::vector<Object3d *> &&objects, std::vector<LightSource *> &&lights) :
+    SceneData(const Camera &camera, std::vector<Object3d *> &&objects, std::vector<LightSource *> &&lights) :
+            camera(camera),
             objects(std::move(objects)),
             lights(std::move(lights)) { }
 
     SceneData(SceneData &&other) :
+            camera(other.camera),
             objects(std::move(other.objects)),
             lights(std::move(other.lights)) { }
 
@@ -22,13 +23,15 @@ public:
         object = nullptr;
     }
 
-    std::vector<Object3d *> &getObjects() {
-        return objects;
+    void addMaterial(Material* &&material) {
+        materials.push_back(material);
+        material = nullptr;
     }
 
-private:
+    Camera camera;
     std::vector<Object3d *> objects;
     std::vector<LightSource *> lights;
+    std::vector<Material *> materials;
 };
 
 class SceneReader {

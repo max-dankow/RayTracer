@@ -19,8 +19,8 @@ int main(int argc, char *argv[]) {
     std::vector<LightSource *> lights = {
 //            new PointLight(Point(5, 1, 0), 25, CL_RED),
 //            new PointLight(Point(-5, 1, 0), 25, CL_GREEN),
-            new PointLight(Point(0, 1, 0), 25, CL_WHITE),
-            new PointLight(Point(0, 0, 30), 50, CL_WHITE),
+            new PointLight(Point(0, 1, 0), 10, CL_WHITE),
+            new PointLight(Point(0, 0, 30), 30, CL_WHITE),
 //            new PointLight(Point(-3, 3, 7), 20, CL_WHITE),
     };
     /// STL MODELS
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 
 //    objects = reader.readObjects("./STLScenes/invader.stl");
     SceneData sceneData = readerRT.readScene("./RTScenes/example.rt");
-    Scene::mergeObjects(objects, std::move(sceneData.getObjects()));
+    Scene::mergeObjects(objects, std::move(sceneData.objects));
 
     /// OTHER
 //    std::vector<Object3d *> manual = {
@@ -51,10 +51,8 @@ int main(int argc, char *argv[]) {
 //    }
 
     Picture picture;
-    Scene scene(Point(0, 0, -2),
-                Point(2, 1.5, 0), Point(-2, -1.5, 0),
-                800, 600,
-                std::move(objects),
+    Scene scene(sceneData.camera, 800, 600,
+                std::move(objects), // todo: consume SceneData
                 std::move(lights), 5000000); // 5000000
     picture = scene.render();
 
