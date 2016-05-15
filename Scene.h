@@ -182,7 +182,7 @@ private:
 
     Camera camera;
     Color backgroundColor = CL_BLACK;
-    double backgroundIllumination = 0;
+    Color backgroundIllumination = CL_WHITE * 0.05;
 
     // Kd дерево указателей на все объекты сцены, хранимые в куче.
     KdTree objects;

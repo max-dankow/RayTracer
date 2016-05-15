@@ -127,8 +127,8 @@ private:
     void split(unique_ptr<KdNode> &node);
 
     // Подсчет эвристики площади поверхности sah.
-    double surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
-                                const std::vector<GeometricShape *> &objects);
+    Real surfaceAreaHeuristic(Axis splitAxis, Real splitPoint, const BoundingBox &box,
+                              const std::vector<GeometricShape *> &objects);
 
     unsigned long countPrimitivesInBox(const std::vector<GeometricShape *> &objects,
                                        const BoundingBox &box);
@@ -139,13 +139,13 @@ private:
 
     // Ищет плоскость, разбивающую box самым выгодным способом.
     // Возвращает true, если такая плоскость существует, и false, если не нужно делить.
-    bool findSplitPlane(SplitMethod method, unique_ptr<KdNode> &node, Axis &splitAxis, double &splitPoint);
+    bool findSplitPlane(SplitMethod method, unique_ptr<KdNode> &node, Axis &splitAxis, Real &splitPoint);
 
-    bool findSplitByBounds(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+    bool findSplitByBounds(unique_ptr<KdNode> &node, Axis &splitAxisMin, Real &splitPointMin);
 
-    bool findSplitByGrid(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+    bool findSplitByGrid(unique_ptr<KdNode> &node, Axis &splitAxisMin, Real &splitPointMin);
 
-    bool findSplitByGridFast(unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin);
+    bool findSplitByGridFast(unique_ptr<KdNode> &node, Axis &splitAxisMin, Real &splitPointMin);
 
     GeometricShape *checkIntersection(const Ray &ray,
                                       const std::vector<GeometricShape *> &objectList,
@@ -153,7 +153,7 @@ private:
 
     const SplitMethod splitMethod = SPLIT_ADAPTIVE;
     static const size_t REGULAR_GRID_COUNT = 32;
-    const double COST_EMPTY = 0.1;
+    const Real COST_EMPTY = 0.1;
     size_t nodeCount;
     unique_ptr<KdNode> root;
 };

@@ -12,13 +12,19 @@ public:
 
     Triangle3d(const Point &a, const Point &b, const Point &c, const Material *material);
 
-    virtual Vector3d getNormal(const Point &point) const;
+    virtual Vector3d getNormal(const Point &point) const {
+        return normal;
+    }
 
     virtual bool intersectRay(const Ray &ray, Point &intersection) const;
 
-    virtual Color getColorAt(const Point &point) const;
+    virtual Color getColorAt(const Point &point) const {
+        return material->color;
+    }
 
-    virtual BoundingBox getBoundingBox() const;
+    virtual BoundingBox getBoundingBox() const {
+        return BoundingBox({a, b, c});
+    }
 
     virtual ~Triangle3d() { }
 
@@ -27,9 +33,27 @@ private:
     Point a, b, c;
     // Предпосчитанный вектор нормали.
     Vector3d normal;
-    // Для некоторого ускорения добавим предпосчитанные величины.
-    Vector3d ab, bc, ca;  // Предпосчитанные векторы сторон
-    double D;  // Коэфицент при свободном члене уравнения плоскости треугольника
 };
+
+Triangle3d::Triangle3d(const Point &a, const Point &b, const Point &c,
+                       const Material *material) : Object3d(material), a(a), b(b), c(c) {
+    Vector3d ab(a, b), ac(a, c);
+    normal = Vector3d::crossProduct(ab, ac).normalize();
+}
+
+bool Triangle3d::intersectRay(const Ray &ray, Point &intersection) const {
+    Real t = 0;
+    Real D = Vector3d::dotProduct(normal, a);
+    if (!ray.intersectPlane(normal, D, a, t)) {
+        return false;
+    }
+    Point p = ray.getPointAt(t);  // Точка пересечения луча с плоскостью треугольника
+    // Проверяем лежит ли p внутри треугольника.
+    if (p.belongsToTriangle(a, b, c, normal)) {
+        intersection = p;
+        return true;
+    }
+    return false;
+}
 
 #endif //RAYTRACER_TRIANGLE3D_H

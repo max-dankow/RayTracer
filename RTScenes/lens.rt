@@ -1,0 +1,21 @@
+viewport
+    origin -2 0 0
+    topleft 0 -1 1
+    topright 0 1 1
+    bottomleft 0 -1 -1
+endviewport
+
+materials
+    entry
+        name mat
+        color 230 230 230
+    endentry
+endmaterials
+
+geometry
+    sphere
+        coords 0 1 0
+        radius 0.5
+        material mat
+    endsphere
+endgeometry

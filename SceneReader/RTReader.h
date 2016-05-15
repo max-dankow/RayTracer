@@ -187,7 +187,7 @@ Material *RTReader::readMaterials(std::ifstream &input, std::map<string, const M
     string name;
     Color color = CL_WHITE;
     double reflectance = 0;
-    double refractiveIndex = 0;
+    double refractiveIndex = 1;
     double transparency = 0;
     while (getNextWord(input, property)) {
         if (property == "endentry") {

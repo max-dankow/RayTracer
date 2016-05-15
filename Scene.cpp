@@ -133,7 +133,7 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
 //    double totalR = 0;
 //    double totalG = 0;
 //    double totalB = 0; // todo: extend Color to deal with such hyper colors
-    Color total(CL_BLACK);
+    Color total;//(backgroundIllumination);
     double dotNormalRay = Vector3d::dotProduct(object->getNormal(point), viewRay.getDirection());
     auto material = object->getMaterial();
     for (const LightSource *light : lights) {
@@ -143,7 +143,7 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
 
         // Если луч направлен с противоположной стороны от осточника относительно примитива, то отсекаем его.
         double dotNormalLight = Vector3d::dotProduct(object->getNormal(point), lightRay.getDirection());
-        if (dotNormalLight * dotNormalRay >= 0 || Geometry::areDoubleEqual(sqrDistanceToLight, 0)) {
+        if (dotNormalLight * dotNormalRay >= 0 || Geometry::areRealNumbersEqual(sqrDistanceToLight, 0)) {
             continue;
         }
         lightRay.push();
@@ -157,7 +157,7 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
             Vector3d lightReflectedDirection = lightRay.reflectRay(object->getNormal(point));
             double fong = 0;
             if (!Vector3d::isNullVector(lightReflectedDirection)) {
-                double fongCos = std::max(-Vector3d::dotProduct(lightReflectedDirection, viewRay.getDirection()), 0.);
+                Real fongCos = std::max<Real>(-Vector3d::dotProduct(lightReflectedDirection, viewRay.getDirection()), 0);
                 fong = std::pow(fongCos, material->phongPower);
             }
             double brightness = dotNormalLight;
@@ -175,7 +175,7 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
 }
 
 Color Scene::computeReflectionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth) {
-    if (Geometry::areDoubleEqual(object->getMaterial()->reflectance, 0)) {
+    if (Geometry::areRealNumbersEqual(object->getMaterial()->reflectance, 0)) {
         return CL_BLACK;
     }
 
@@ -190,7 +190,7 @@ Color Scene::computeReflectionColor(Object3d *object, const Point &point, const 
 }
 
 Color Scene::computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth) {
-    if (Geometry::areDoubleEqual(object->getMaterial()->transparency, 0)) {
+    if (Geometry::areRealNumbersEqual(object->getMaterial()->transparency, 0)) {
         return CL_BLACK;
     }
     Vector3d refractionDirection =

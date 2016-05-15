@@ -11,25 +11,25 @@ public:
 
     Sphere(const Material *material) : Object3d(material) {}
 
-    Sphere(const Point &center, double radius, const Material *material) : Object3d(material),
+    Sphere(const Point &center, Real radius, const Material *material) : Object3d(material),
             center(center), radius(radius), radiusSquared(radius * radius) {
-        assert(radius > 0 && !Geometry::areDoubleEqual(radius, 0));
+        assert(radius > 0 && !Geometry::areRealNumbersEqual(radius, 0));
     }
 
     const Point &getCenter() const {
         return center;
     }
 
-    double getRadius() const {
+    Real getRadius() const {
         return radius;
     }
 
-    double getRadiusSquared() const {
+    Real getRadiusSquared() const {
         return radiusSquared;
     }
 
     virtual Vector3d getNormal(const Point &point) const {
-        assert(Geometry::areDoubleEqual((point - center).lengthSquared(), radiusSquared));
+        assert(Geometry::areRealNumbersEqual((point - center).lengthSquared(), radiusSquared));
         return Vector3d(point - center).normalize();
     }
 
@@ -43,7 +43,7 @@ public:
 
 private:
     Point center;
-    double radius, radiusSquared;
+    Real radius, radiusSquared;
 };
 
 

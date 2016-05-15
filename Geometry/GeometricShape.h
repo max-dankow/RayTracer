@@ -1,7 +1,6 @@
 #ifndef RAYTRACER_GEOMETRICSHAPE_H
 #define RAYTRACER_GEOMETRICSHAPE_H
 
-
 #include "BoundingBox.h"
 
 // Интерфейс, представляющий пространственную геометрическую фигуру.

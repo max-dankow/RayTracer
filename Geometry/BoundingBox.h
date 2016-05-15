@@ -5,21 +5,22 @@
 #include "Vector3d.h"
 #include "Ray.h"
 
-// Представляет параллелограм со сторонами параллельными осям, обрамляющий некоторые примитивы.
+// Представляет параллелограм со сторонами параллельными осям, обрамляющий некоторые фигуры в пространстве.
 // Характеризуется точкой с минимальными координатами minCorner и точкой с максимальными координатами maxCorner.
 struct BoundingBox {
 
     BoundingBox() { }
 
-    BoundingBox(const Point &minCorner, const Point &maxCorner) : minCorner(minCorner), maxCorner(maxCorner) { }
+    BoundingBox(const Point &minCorner, const Point &maxCorner) :
+            minCorner(minCorner), maxCorner(maxCorner) { }
 
     // Конструирует BoundingBox обрамляющий указанные точки.
     BoundingBox(const std::vector<Point> &points);
 
-    // Расширяет BoundingBox так чтобы он обрамлял исходный и otherBox.
+    // Расширяет BoundingBox так, чтобы он обрамлял исходный и otherBox.
     void extend(const BoundingBox &otherBox);
 
-    double surfaceArea() const;
+    Real surfaceArea() const;
 
     bool containsPoint(const Point &point) const {
         return point.totallyLessEqualThan(maxCorner) && minCorner.totallyLessEqualThan(point);
@@ -30,9 +31,9 @@ struct BoundingBox {
                && other.minCorner.totallyLessEqualThan(this->maxCorner);
     }
 
-    double intersectRay(const Ray &ray) const;
+    Real intersectRay(const Ray &ray) const;
 
-    Point minCorner, maxCorner; // todo: попытаться сокрыть
+    Point minCorner, maxCorner;
 
 private:
     // Возвращает точку с координатами, минимальными по каждой оси.

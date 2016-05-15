@@ -24,7 +24,7 @@ public:
     }
 
     virtual bool intersectRay(const Ray &ray, Point &intersection) const {
-        double t = 0;
+        Real t = 0;
         Vector3d ab(vertices[0], vertices[1]), ac(vertices[0], vertices[2]);
         if (!ray.intersectPlane(ab, ac, vertices[0], t)) {
             return false;

@@ -8,13 +8,26 @@
 struct Vector3d {
     Vector3d() : x(0), y(0), z(0) { }
 
-    Vector3d(double x, double y, double z) : x(x), y(y), z(z) { }
+    Vector3d(Real x, Real y, Real z) : x(x), y(y), z(z) { }
 
     Vector3d(const Vector3d &from, const Vector3d &to) {
         *this = to - from;
     }
 
-    double &operator[](Axis axis) {
+    void setAxis(Axis axis, Real newValue) {
+        switch (axis) {
+            case AXIS_X:
+                x = newValue;
+            case AXIS_Y:
+                y = newValue;
+            case AXIS_Z:
+                z = newValue;
+            default:
+                assert(false);
+        }
+    }
+
+    Real getAxis(Axis axis) const {
         switch (axis) {
             case AXIS_X:
                 return x;
@@ -35,19 +48,19 @@ struct Vector3d {
         return Vector3d(this->x - other.x, this->y - other.y, this->z - other.z);
     }
 
-    Vector3d operator*(double k) const {
+    Vector3d operator*(Real k) const {
         return Vector3d(x * k, y * k, z * k);
     }
 
-    Vector3d operator/(double k) const {
+    Vector3d operator/(Real k) const {
         return Vector3d(this->x / k, this->y / k, this->z / k);
     }
 
-    double length() const {
-        return sqrt(x * x + y * y + z * z);
+    Real length() const {
+        return (Real) sqrt(x * x + y * y + z * z);
     }
 
-    double lengthSquared() const {
+    Real lengthSquared() const {
         return x * x + y * y + z * z;
     }
 
@@ -56,7 +69,7 @@ struct Vector3d {
     }
 
     // Скалярное произведение.
-    static double dotProduct(const Vector3d &a, const Vector3d &b) {
+    static Real dotProduct(const Vector3d &a, const Vector3d &b) {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 
@@ -66,9 +79,9 @@ struct Vector3d {
     }
 
     bool operator==(const Vector3d &other) const {
-        return (Geometry::areDoubleEqual(this->x, other.x)
-                && Geometry::areDoubleEqual(this->y, other.y)
-                && Geometry::areDoubleEqual(this->z, other.z));
+        return (Geometry::areRealNumbersEqual(this->x, other.x)
+                && Geometry::areRealNumbersEqual(this->y, other.y)
+                && Geometry::areRealNumbersEqual(this->z, other.z));
     }
 
     bool operator!=(const Vector3d &other) const {
@@ -84,9 +97,9 @@ struct Vector3d {
     }
 
     bool totallyLessEqualThan(const Vector3d &other) const {
-        return ((this->x < other.x || Geometry::areDoubleEqual(this->x, other.x))
-                && (this->y < other.y || Geometry::areDoubleEqual(this->y, other.y))
-                && (this->z < other.z || Geometry::areDoubleEqual(this->z, other.z)));
+        return ((this->x < other.x || Geometry::areRealNumbersEqual(this->x, other.x))
+                && (this->y < other.y || Geometry::areRealNumbersEqual(this->y, other.y))
+                && (this->z < other.z || Geometry::areRealNumbersEqual(this->z, other.z)));
     }
 
     friend std::istream &operator>>(std::istream &input, Vector3d &vector) {
@@ -99,17 +112,15 @@ struct Vector3d {
         return output;
     }
 
-    bool belongsToTriangle(const Vector3d &a, const Vector3d &b, const Vector3d &c, const Vector3d &normal) {
-        Vector3d ab(a, b);
-        Vector3d bc(b, c);
-        Vector3d ca(c, a);
+    bool belongsToTriangle(const Vector3d &a, const Vector3d &b, const Vector3d &c, const Vector3d &normal) const {
+        Vector3d ab(a, b), bc(b, c), ca(c, a);
         Vector3d ap(a, *this), bp(b, *this), cp(c, *this);
         return Vector3d::dotProduct(normal, Vector3d::crossProduct(ab, ap)) >= 0
                && Vector3d::dotProduct(normal, Vector3d::crossProduct(bc, bp)) >= 0
                && Vector3d::dotProduct(normal, Vector3d::crossProduct(ca, cp)) >= 0;
     }
 
-    double x, y, z;
+    Real x, y, z;
 };
 
 // typedef для разделения сущностей точки и вектора.

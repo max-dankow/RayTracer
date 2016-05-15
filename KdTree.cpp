@@ -32,7 +32,7 @@ KdTree::KdTree(const std::vector<GeometricShape *> &objects) {
 void KdTree::split(std::unique_ptr<KdNode> &node) {
     // Выбрать плоскость разбиения, которая делит данный узел на два дочерних.
     Axis splitAxis;
-    double splitPoint;
+    Real splitPoint;
     // Если не нужно делить, то получили лист.
     if (!findSplitPlane(splitMethod, node, splitAxis, splitPoint)) {
         node->resetLeftPointer(nullptr);
@@ -45,11 +45,11 @@ void KdTree::split(std::unique_ptr<KdNode> &node) {
     node->setSplitPoint(splitPoint);
 
     auto leftBox = node->getBox();
-    leftBox.maxCorner[splitAxis] = splitPoint;
+    leftBox.maxCorner.setAxis(splitAxis, splitPoint);
     std::vector<GeometricShape *> leftObjects;
 
     auto rightBox = node->getBox();
-    rightBox.minCorner[splitAxis] = splitPoint;
+    rightBox.minCorner.setAxis(splitAxis, splitPoint);
     std::vector<GeometricShape *> rightObjects;
 
     // Распределяем объекты по поддеревьям.
@@ -72,14 +72,14 @@ void KdTree::split(std::unique_ptr<KdNode> &node) {
     split(node->getRightPtr());
 }
 
-double KdTree::surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
-                                    const std::vector<GeometricShape *> &objects) {
+Real KdTree::surfaceAreaHeuristic(Axis splitAxis, Real splitPoint, const BoundingBox &box,
+                                  const std::vector<GeometricShape *> &objects) {
     auto leftBox = box;
-    leftBox.maxCorner[splitAxis] = splitPoint;
+    leftBox.maxCorner.setAxis(splitAxis, splitPoint);
     unsigned long leftObjectNumber = countPrimitivesInBox(objects, leftBox);
 
     auto rightBox = box;
-    rightBox.minCorner[splitAxis] = splitPoint;
+    rightBox.minCorner.setAxis(splitAxis, splitPoint);
     unsigned long rightObjectNumber = countPrimitivesInBox(objects, rightBox);
 
     return COST_EMPTY + leftObjectNumber * leftBox.surfaceArea() + rightObjectNumber * rightBox.surfaceArea();
@@ -96,7 +96,7 @@ unsigned long KdTree::countPrimitivesInBox(const std::vector<GeometricShape *> &
     return count;
 }
 
-bool KdTree::findSplitPlane(SplitMethod method, std::unique_ptr<KdNode> &node, Axis &splitAxis, double &splitPoint) {
+bool KdTree::findSplitPlane(SplitMethod method, std::unique_ptr<KdNode> &node, Axis &splitAxis, Real &splitPoint) {
     if (node->getObjectsNumber() == 0) {
         return false;
     }
@@ -119,24 +119,24 @@ bool KdTree::findSplitPlane(SplitMethod method, std::unique_ptr<KdNode> &node, A
     }
 }
 
-bool KdTree::findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin) {
+bool KdTree::findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, Real &splitPointMin) {
     auto surroundBox = node->getBox();
     splitPointMin = surroundBox.minCorner.x;
     splitAxisMin = AXIS_X;
 
-    double heuristicMin = surfaceAreaHeuristic(splitAxisMin, splitPointMin, surroundBox, node->getObjects());
+    Real heuristicMin = surfaceAreaHeuristic(splitAxisMin, splitPointMin, surroundBox, node->getObjects());
 
     // Для каждой оси и для каждого пробного положения высчитать эвристику площади и найти минимум.
     for (int axisIter = 0; axisIter < 3; ++axisIter) {
         Axis axis = static_cast<Axis> (axisIter);
         // Т.к. границы примитивов могут и не принадлежать surroundBox, то это нужно проверять.
-        double splitPointFrom = surroundBox.minCorner[axis];
-        double splitPointTo = surroundBox.maxCorner[axis];
+        Real splitPointFrom = surroundBox.minCorner.getAxis(axis);
+        Real splitPointTo = surroundBox.maxCorner.getAxis(axis);
         for (GeometricShape *object : node->getObjects()) {
             auto objectBox = object->getBoundingBox();
-            double splitPoint = objectBox.minCorner[axis];
+            Real splitPoint = objectBox.minCorner.getAxis(axis);
             if (splitPoint >= splitPointFrom && splitPoint <= splitPointTo) {
-                double heuristic = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
+                Real heuristic = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
                 if (heuristic < heuristicMin) {
                     heuristicMin = heuristic;
                     splitAxisMin = axis;
@@ -150,18 +150,18 @@ bool KdTree::findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin
     return node->getObjectsNumber() * surroundBox.surfaceArea() > heuristicMin;
 }
 
-bool KdTree::findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin) {
+bool KdTree::findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, Real &splitPointMin) {
     auto surroundBox = node->getBox();
     splitPointMin = surroundBox.minCorner.x;
     splitAxisMin = AXIS_X;
-    double heuristicMin = node->getObjectsNumber() * surroundBox.surfaceArea();
+    Real heuristicMin = node->getObjectsNumber() * surroundBox.surfaceArea();
     for (int axisIter = 0; axisIter < 3; ++axisIter) {
         Axis axis = static_cast<Axis> (axisIter);
         for (size_t i = 0; i < REGULAR_GRID_COUNT; ++i) {
-            double splitPoint = surroundBox.minCorner[axis]
-                                + i * (surroundBox.maxCorner[axis] - surroundBox.minCorner[axis])
-                                  / REGULAR_GRID_COUNT;
-            double heuristic = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
+            Real splitPoint = surroundBox.minCorner.getAxis(axis)
+                              + i * (surroundBox.maxCorner.getAxis(axis) - surroundBox.minCorner.getAxis(axis))
+                                / REGULAR_GRID_COUNT;
+            Real heuristic = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
             if (heuristic < heuristicMin) {
                 heuristicMin = heuristic;
                 splitAxisMin = axis;
@@ -174,17 +174,17 @@ bool KdTree::findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, 
     return node->getObjectsNumber() * surroundBox.surfaceArea() > heuristicMin;
 }
 
-bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, double &splitPointMin) {
+bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, Real &splitPointMin) {
     auto surroundBox = node->getBox();
     splitPointMin = surroundBox.minCorner.x;
     splitAxisMin = AXIS_X;
     size_t gridCount = getRegularGridCount();
-    double heuristicMin = node->getObjects().size() * surroundBox.surfaceArea();
+    Real heuristicMin = node->getObjects().size() * surroundBox.surfaceArea();
     for (int axisIter = 0; axisIter < 3; ++axisIter) {
         Axis axis = static_cast<Axis> (axisIter);
-        double splitPointFrom = surroundBox.minCorner[axis];
-        double splitPointTo = surroundBox.maxCorner[axis];
-        double gridStep = (splitPointTo - splitPointFrom) / gridCount;
+        Real splitPointFrom = surroundBox.minCorner.getAxis(axis);
+        Real splitPointTo = surroundBox.maxCorner.getAxis(axis);
+        Real gridStep = (splitPointTo - splitPointFrom) / gridCount;
 
         // Сколько примитивов начинаются в соответсвующей корзинке.
         std::vector<size_t> startsHereCount(gridCount, 0);
@@ -197,9 +197,9 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
             long binIndex;
 
             // startsHereCount
-            double d = (objectBox.minCorner[axis] - splitPointFrom) / gridStep;
+            Real d = (objectBox.minCorner.getAxis(axis) - splitPointFrom) / gridStep;
             // Если начало в плоскости разреза, то учесть его нужно уже в предыдущей корзине.
-            if (Geometry::areDoubleEqual(d - std::round(d), 0)) {
+            if (Geometry::areRealNumbersEqual(d - std::round(d), 0)) {
                 binIndex = (long) std::round(d) - 1;
             } else {
                 binIndex = (long) std::floor(d);
@@ -211,9 +211,9 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
             startsHereCount[binIndex]++;
 
             // endsHereCount
-            d = (objectBox.maxCorner[axis] - splitPointFrom) / gridStep;
+            d = (objectBox.maxCorner.getAxis(axis) - splitPointFrom) / gridStep;
             // Если начало в плоскости разреза, то учесть его нужно уже в предыдущей корзине.
-            if (Geometry::areDoubleEqual(d - std::round(d), 0)) {
+            if (Geometry::areRealNumbersEqual(d - std::round(d), 0)) {
                 binIndex = (long) std::round(d);
             } else {
                 binIndex = (long) std::floor(d);
@@ -230,17 +230,19 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
 
         // Считаем эвристику в точках сетки.
         for (size_t i = 1; i < gridCount; ++i) {
-            double splitPoint = splitPointFrom + i * gridStep;
+            Real splitPoint = splitPointFrom + i * gridStep;
             auto leftBox = surroundBox;
-            leftBox.maxCorner[axis] = splitPoint;
+            leftBox.maxCorner.setAxis(axis, splitPoint);
             leftObjectNumber += startsHereCount[i - 1];
 
             auto rightBox = surroundBox;
-            rightBox.minCorner[axis] = splitPoint;
+            rightBox.minCorner.setAxis(axis, splitPoint);
             rightObjectNumber -= endsHereCount[i - 1];
 
-            double heuristic =
-                    COST_EMPTY + leftObjectNumber * leftBox.surfaceArea() + rightObjectNumber * rightBox.surfaceArea();
+            Real heuristic = COST_EMPTY
+                    + leftObjectNumber * leftBox.surfaceArea()
+                    + rightObjectNumber * rightBox.surfaceArea();
+
             if (heuristic < heuristicMin) {
                 heuristicMin = heuristic;
                 splitAxisMin = axis;
@@ -256,14 +258,14 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
 GeometricShape *KdTree::checkIntersection(const Ray &ray,
                                           const std::vector<GeometricShape *> &objectList,
                                           Point &intersection) const {
-    double minSqrDistance = 0;  // Квадрат минимального расстояния до пересечения
+    Real minSqrDistance = 0;  // Квадрат минимального расстояния до пересечения
     GeometricShape *obstacle = nullptr;
     for (GeometricShape *object : objectList) {
         Point thisIntersection;
         if (object->intersectRay(ray, thisIntersection)) {
-            double sqrDistance = (thisIntersection - ray.getOrigin()).lengthSquared();
+            Real sqrDistance = (thisIntersection - ray.getOrigin()).lengthSquared();
             if ((obstacle == nullptr || sqrDistance < minSqrDistance)
-                && !Geometry::areDoubleEqual(sqrDistance, 0)) {
+                && !Geometry::areRealNumbersEqual(sqrDistance, 0)) {
                 minSqrDistance = sqrDistance;
                 object->intersectRay(ray, thisIntersection);
                 intersection = thisIntersection;
@@ -292,20 +294,20 @@ GeometricShape *KdTree::findObstacle(const Ray &ray, Point &hitPoint) const {
             }
         } else {
             auto leftBox = node->getBox();
-            leftBox.maxCorner[node->getSplitAxis()] = node->getSplitPoint();
+            leftBox.maxCorner.setAxis(node->getSplitAxis(), node->getSplitPoint());
 
             auto rightBox = node->getBox();
-            rightBox.minCorner[node->getSplitAxis()] = node->getSplitPoint();
+            rightBox.minCorner.setAxis(node->getSplitAxis(), node->getSplitPoint());
 
-            double t_left = leftBox.intersectRay(ray);
-            double t_right = rightBox.intersectRay(ray);
+            Real t_left = leftBox.intersectRay(ray);
+            Real t_right = rightBox.intersectRay(ray);
 
             // Сначала пересекается leftBox.
             if (t_left <= t_right) {
                 auto old = node;
-                if (t_left != std::numeric_limits<double>::infinity()) {
+                if (t_left != std::numeric_limits<Real>::infinity()) {
                     node = old->getLeftPtr().get();
-                    if (t_right != std::numeric_limits<double>::infinity()) {// todo : method isNotInf
+                    if (t_right != std::numeric_limits<Real>::infinity()) {// todo : method isNotInf
                         stack.push(old->getRightPtr().get());
                     }
                     continue;
@@ -314,9 +316,9 @@ GeometricShape *KdTree::findObstacle(const Ray &ray, Point &hitPoint) const {
             // Сначала пересекается rightBox.
             if (t_right < t_left) {
                 auto old = node;
-                if (t_right != std::numeric_limits<double>::infinity()) {
+                if (t_right != std::numeric_limits<Real>::infinity()) {
                     node = old->getRightPtr().get();
-                    if (t_left != std::numeric_limits<double>::infinity()) {
+                    if (t_left != std::numeric_limits<Real>::infinity()) {
                         stack.push(old->getLeftPtr().get());
                     }
                     continue;

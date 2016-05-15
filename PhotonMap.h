@@ -30,7 +30,7 @@ public:
             totalPower += light->getBrightness();
         }
         // Чтобы не делить на 0, если вообще нет света, выходим.
-        if (Geometry::areDoubleEqual(totalPower, 0)) {
+        if (Geometry::areRealNumbersEqual(totalPower, 0)) {
             std::cout << "Photon Map has been built, no lights\n";
             return;
         }
@@ -99,7 +99,7 @@ public:
                     }
                 }
             } else {
-                double distanceToPlane = point[node->getSplitAxis()] - node->getSplitPoint();
+                double distanceToPlane = point.getAxis(node->getSplitAxis()) - node->getSplitPoint();
 //                if (distanceToPlane * distanceToPlane > maxDistance * maxDistance) {
 //                    continue;
 //                }
