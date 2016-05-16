@@ -45,11 +45,11 @@ void KdTree::split(std::unique_ptr<KdNode> &node) {
     node->setSplitPoint(splitPoint);
 
     auto leftBox = node->getBox();
-    leftBox.maxCorner[splitAxis] = splitPoint;
+    leftBox.maxCorner.setAxis(splitAxis, splitPoint);
     std::vector<GeometricShape *> leftObjects;
 
     auto rightBox = node->getBox();
-    rightBox.minCorner[splitAxis] = splitPoint;
+    rightBox.minCorner.setAxis(splitAxis, splitPoint);
     std::vector<GeometricShape *> rightObjects;
 
     // Распределяем объекты по поддеревьям.
@@ -75,11 +75,11 @@ void KdTree::split(std::unique_ptr<KdNode> &node) {
 double KdTree::surfaceAreaHeuristic(Axis splitAxis, double splitPoint, const BoundingBox &box,
                                     const std::vector<GeometricShape *> &objects) {
     auto leftBox = box;
-    leftBox.maxCorner[splitAxis] = splitPoint;
+    leftBox.maxCorner.setAxis(splitAxis, splitPoint);
     unsigned long leftObjectNumber = countPrimitivesInBox(objects, leftBox);
 
     auto rightBox = box;
-    rightBox.minCorner[splitAxis] = splitPoint;
+    rightBox.minCorner.setAxis(splitAxis, splitPoint);
     unsigned long rightObjectNumber = countPrimitivesInBox(objects, rightBox);
 
     return COST_EMPTY + leftObjectNumber * leftBox.surfaceArea() + rightObjectNumber * rightBox.surfaceArea();
@@ -130,11 +130,11 @@ bool KdTree::findSplitByBounds(std::unique_ptr<KdNode> &node, Axis &splitAxisMin
     for (int axisIter = 0; axisIter < 3; ++axisIter) {
         Axis axis = static_cast<Axis> (axisIter);
         // Т.к. границы примитивов могут и не принадлежать surroundBox, то это нужно проверять.
-        double splitPointFrom = surroundBox.minCorner[axis];
-        double splitPointTo = surroundBox.maxCorner[axis];
+        double splitPointFrom = surroundBox.minCorner.getAxis(axis);
+        double splitPointTo = surroundBox.maxCorner.getAxis(axis);
         for (GeometricShape *object : node->getObjects()) {
             auto objectBox = object->getBoundingBox();
-            double splitPoint = objectBox.minCorner[axis];
+            double splitPoint = objectBox.minCorner.getAxis(axis);
             if (splitPoint >= splitPointFrom && splitPoint <= splitPointTo) {
                 double heuristic = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
                 if (heuristic < heuristicMin) {
@@ -158,8 +158,8 @@ bool KdTree::findSplitByGrid(std::unique_ptr<KdNode> &node, Axis &splitAxisMin, 
     for (int axisIter = 0; axisIter < 3; ++axisIter) {
         Axis axis = static_cast<Axis> (axisIter);
         for (size_t i = 0; i < REGULAR_GRID_COUNT; ++i) {
-            double splitPoint = surroundBox.minCorner[axis]
-                                + i * (surroundBox.maxCorner[axis] - surroundBox.minCorner[axis])
+            double splitPoint = surroundBox.minCorner.getAxis(axis)
+                                + i * (surroundBox.maxCorner.getAxis(axis) - surroundBox.minCorner.getAxis(axis))
                                   / REGULAR_GRID_COUNT;
             double heuristic = surfaceAreaHeuristic(axis, splitPoint, surroundBox, node->getObjects());
             if (heuristic < heuristicMin) {
@@ -182,8 +182,8 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
     double heuristicMin = node->getObjects().size() * surroundBox.surfaceArea();
     for (int axisIter = 0; axisIter < 3; ++axisIter) {
         Axis axis = static_cast<Axis> (axisIter);
-        double splitPointFrom = surroundBox.minCorner[axis];
-        double splitPointTo = surroundBox.maxCorner[axis];
+        double splitPointFrom = surroundBox.minCorner.getAxis(axis);
+        double splitPointTo = surroundBox.maxCorner.getAxis(axis);
         double gridStep = (splitPointTo - splitPointFrom) / gridCount;
 
         // Сколько примитивов начинаются в соответсвующей корзинке.
@@ -197,7 +197,7 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
             long binIndex;
 
             // startsHereCount
-            double d = (objectBox.minCorner[axis] - splitPointFrom) / gridStep;
+            double d = (objectBox.minCorner.getAxis(axis) - splitPointFrom) / gridStep;
             // Если начало в плоскости разреза, то учесть его нужно уже в предыдущей корзине.
             if (Geometry::areDoubleEqual(d - std::round(d), 0)) {
                 binIndex = (long) std::round(d) - 1;
@@ -211,7 +211,7 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
             startsHereCount[binIndex]++;
 
             // endsHereCount
-            d = (objectBox.maxCorner[axis] - splitPointFrom) / gridStep;
+            d = (objectBox.maxCorner.getAxis(axis) - splitPointFrom) / gridStep;
             // Если начало в плоскости разреза, то учесть его нужно уже в предыдущей корзине.
             if (Geometry::areDoubleEqual(d - std::round(d), 0)) {
                 binIndex = (long) std::round(d);
@@ -232,11 +232,11 @@ bool KdTree::findSplitByGridFast(std::unique_ptr<KdNode> &node, Axis &splitAxisM
         for (size_t i = 1; i < gridCount; ++i) {
             double splitPoint = splitPointFrom + i * gridStep;
             auto leftBox = surroundBox;
-            leftBox.maxCorner[axis] = splitPoint;
+            leftBox.maxCorner.setAxis(axis, splitPoint);
             leftObjectNumber += startsHereCount[i - 1];
 
             auto rightBox = surroundBox;
-            rightBox.minCorner[axis] = splitPoint;
+            rightBox.minCorner.setAxis(axis, splitPoint);
             rightObjectNumber -= endsHereCount[i - 1];
 
             double heuristic =
@@ -292,10 +292,10 @@ GeometricShape *KdTree::findObstacle(const Ray &ray, Point &hitPoint) const {
             }
         } else {
             auto leftBox = node->getBox();
-            leftBox.maxCorner[node->getSplitAxis()] = node->getSplitPoint();
+            leftBox.maxCorner.setAxis(node->getSplitAxis(), node->getSplitPoint());
 
             auto rightBox = node->getBox();
-            rightBox.minCorner[node->getSplitAxis()] = node->getSplitPoint();
+            rightBox.minCorner.setAxis(node->getSplitAxis(), node->getSplitPoint());
 
             double t_left = leftBox.intersectRay(ray);
             double t_right = rightBox.intersectRay(ray);

@@ -76,7 +76,7 @@ public:
         }
         std::stack<KdNode *> stack;
 //        std::stack<double> stack2;
-        double dst= 0;
+        double dst = 0;
         while (true) {
             if (dst > sqrMaxDistance) {
                 continue;
@@ -99,7 +99,7 @@ public:
                     }
                 }
             } else {
-                double distanceToPlane = point[node->getSplitAxis()] - node->getSplitPoint();
+                double distanceToPlane = point.getAxis(node->getSplitAxis()) - node->getSplitPoint();
 //                if (distanceToPlane * distanceToPlane > maxDistance * maxDistance) {
 //                    continue;
 //                }
@@ -177,7 +177,7 @@ private:
                 }
             } else {
 //                if (restDepth < 3) {
-                    storedPhotons.push_back(new Photon(hitPoint, photon.getDirection(), photon.getColor()));
+                storedPhotons.push_back(new Photon(hitPoint, photon.getDirection(), photon.getColor()));
 //                }
             }
         }

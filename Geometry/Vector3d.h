@@ -14,7 +14,7 @@ struct Vector3d {
         *this = to - from;
     }
 
-    double &operator[](Axis axis) {
+    double getAxis(Axis axis) const {
         switch (axis) {
             case AXIS_X:
                 return x;
@@ -22,6 +22,22 @@ struct Vector3d {
                 return y;
             case AXIS_Z:
                 return z;
+            default:
+                assert(false);
+        }
+    }
+
+    void setAxis(Axis axis, double newValue) {
+        switch (axis) {
+            case AXIS_X:
+                x = newValue;
+                break;
+            case AXIS_Y:
+                y = newValue;
+                break;
+            case AXIS_Z:
+                z = newValue;
+                break;
             default:
                 assert(false);
         }
