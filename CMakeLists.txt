@@ -26,7 +26,7 @@ set(SOURCE_FILES main.cpp Painter/Painter.h Painter/CairoPainter.h Painter/Cairo
         SceneReader/TextSTLReader.h
         KdTree.cpp KdTree.h Geometry/Vector3d.h Geometry/Ray.h Geometry/BoundingBox.h Geometry/BoundingBox.cpp
         Objects/Sphere.cpp Objects/Sphere.h Objects/PlaneQuadrangle.h Objects/Parallelogram.h
-        PhotonMap.h LightSources/PointLight.h Geometry/GeometricShape.h SceneReader/SceneReader.h SceneReader/RTReader.h Painter/PNGPainter.h)
+        PhotonMap.h LightSources/PointLight.h Geometry/GeometricShape.h SceneReader/SceneReader.h SceneReader/RTReader.h Painter/PNGPainter.h ArgumentsReader.h)
 set(TEST_FILES Painter/Painter.h Painter/CairoPainter.h Painter/CairoPainter.cpp Objects/Object3d.h Scene.cpp Scene.h Objects/Triangle3d.cpp Objects/Triangle3d.h Geometry/Ray.h Geometry/BoundingBox.h Geometry/BoundingBox.cpp Geometry/Geometry.h Tests/Tests.cpp Objects/PlaneQuadrangle.h Objects/Parallelogram.h PhotonMap.h LightSources/PointLight.h)
 add_executable(RayTracer ${SOURCE_FILES})
 add_executable(Tests ${TEST_FILES})

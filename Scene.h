@@ -2,21 +2,13 @@
 #define RAYTRACER_SCENE_H
 
 #include <cmath>
-#include <list>
-#include <memory>
 #include <thread>
 #include "Objects/Object3d.h"
 #include "Geometry/Geometry.h"
-#include "Painter/Painter.h"
 #include "LightSources/LightSource.h"
 #include "KdTree.h"
 #include "SyncQueue/SyncQueue.h"
 #include "PhotonMap.h"
-
-#define ENABLE_ILLUMINATION
-#define ENABLE_REFLECTION
-#define ENABLE_REFRACTION
-#define ENABLE_INDIRECT_ILLUMINATION
 
 struct Task {
     enum TaskType {
@@ -50,29 +42,34 @@ static Camera DEFAULT_CAMERA(Point(0, 0, -2), Point(2, 1.5, 0), Point(2, -1.5, 0
 struct SceneData {
     SceneData() : camera(DEFAULT_CAMERA) { }
 
-    SceneData(const Camera &camera, std::vector<Object3d *> &&objects, std::vector<LightSource *> &&lights) :
+    SceneData(const Camera &camera,
+              std::vector<Object3d *> &&objects,
+              std::vector<LightSource *> &&lights,
+              std::vector<Material *> &&materials) :
             camera(camera),
             objects(std::move(objects)),
-            lights(std::move(lights)) { }
+            lights(std::move(lights)),
+            materials(std::move(materials)) { }
 
     SceneData(SceneData &&other) :
             camera(other.camera),
             objects(std::move(other.objects)),
-            lights(std::move(other.lights)) { }
+            lights(std::move(other.lights)),
+            materials(std::move(other.materials)) { }
 
     void addObject(Object3d* &&object) {
         objects.push_back(object);
         object = nullptr;
     }
 
-    void addMaterial(Material* &&material) {
-        materials.push_back(material);
-        material = nullptr;
-    }
-
     void addLightSource(LightSource* &&lightSource) {
         lights.push_back(lightSource);
         lightSource = nullptr;
+    }
+
+    void addMaterial(Material* &&material) {
+        materials.push_back(material);
+        material = nullptr;
     }
 
     Camera camera;
@@ -81,18 +78,28 @@ struct SceneData {
     std::vector<Material *> materials;
 };
 
+struct SceneProperties {
+    bool enableIllumination = true;
+    bool enableReflection = true;
+    bool enableRefraction = true;
+    bool enableIndirectIllumination = false;
+    bool enableAntiAliasing = false;
+    size_t photonsNumber = 5000000;
+};
+
 class Scene {
 public:
 
     Scene(SceneData &&sceneData,
-          size_t photonsNumber = 1000000) :
+          SceneProperties properties) :
+            properties(properties),
             camera(sceneData.camera),
             objectList(std::move(sceneData.objects)),
             lights(std::move(sceneData.lights)) {
         this->objects = KdTree(std::vector<GeometricShape *>(objectList.begin(), objectList.end()));
-#ifdef ENABLE_INDIRECT_ILLUMINATION
-        this->photonMap = PhotonMap(this->lights, this->objects, photonsNumber);
-#endif
+        if (properties.enableIndirectIllumination) {
+            this->photonMap = PhotonMap(this->lights, this->objects, properties.photonsNumber);
+        }
     }
 
     ~Scene() {
@@ -107,16 +114,8 @@ public:
 
     Picture render(size_t pixelNumberWidth, size_t pixelNumberHeight);
 
-
-
 private:
     const Color computeRayColor(const Ray &ray, int restDepth);
-
-//    Object3d *checkIntersection(const Ray &ray,
-//                                const std::vector<Object3d *> &objectList,
-//                                Point &intersection, Color &color);
-//
-//    Object3d *findObstacle(const Ray &ray, Point &hitPoint, Color &obstacleColor);
 
     Color computeDiffuseColor(Object3d *object, const Point &point, const Ray &viewRay);
 
@@ -210,9 +209,10 @@ private:
         return mixColors(colors);
     }
 
-
     static const int MAX_DEPTH = 10;
     const size_t THREAD_NUMBER = std::thread::hardware_concurrency();
+
+    SceneProperties properties;
 
     Camera camera;
     Color backgroundColor = CL_BLACK;

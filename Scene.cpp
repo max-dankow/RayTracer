@@ -3,11 +3,6 @@
 #include <thread>
 #include "Scene.h"
 
-//#define ENABLE_ANTIALIASING
-//#define HIGHLIGHT_ALIASING
-
-//todo : comand line args instead of defines
-
 Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
     Vector3d colVector = Vector3d(camera.topLeft, camera.topRight) / pixelNumberWidth;
     Vector3d rowVector = Vector3d(camera.topLeft, camera.bottomLeft) / pixelNumberHeight;
@@ -32,49 +27,49 @@ Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
         thread.join();
     }
 
-#ifdef ENABLE_ANTIALIASING
-    Picture newPic(pixelNumberWidth, pixelNumberHeight);
+    if (properties.enableAntiAliasing) {
+        Picture newPic(pixelNumberWidth, pixelNumberHeight);
 
-    SyncQueue<std::vector<Task> > AAtaskQueue;
-    std::vector<std::thread> AAthreads;
-    for (size_t i = 0; i < THREAD_NUMBER; ++i) {
-        AAthreads.emplace_back(&Scene::worker, this, std::ref(AAtaskQueue), std::ref(newPic));
-    }
-    std::cout << "Running Adaptive AntiAliasing with " << THREAD_NUMBER << " threads...\n";
-    // Выделение ступенчатых учатсков.
-    for (size_t col = 1; col < pixelNumberWidth - 1; ++col) {
-        for (size_t row = 1; row < pixelNumberHeight -1; ++row) {
-            Color ignoreColor;
-            if (!isColorPreciseEnough({picture.getAt(col, row),
-                                      picture.getAt(col + 1, row),
-                                      picture.getAt(col, row + 1),
-                                      picture.getAt(col - 1, row),
-                                      picture.getAt(col, row - 1)}, ignoreColor)) {
+        SyncQueue<std::vector<Task> > AAtaskQueue;
+        std::vector<std::thread> AAthreads;
+        for (size_t i = 0; i < THREAD_NUMBER; ++i) {
+            AAthreads.emplace_back(&Scene::worker, this, std::ref(AAtaskQueue), std::ref(newPic));
+        }
+        std::cout << "Running Adaptive AntiAliasing with " << THREAD_NUMBER << " threads...\n";
+        // Выделение ступенчатых учатсков.
+        for (size_t col = 1; col < pixelNumberWidth - 1; ++col) {
+            for (size_t row = 1; row < pixelNumberHeight - 1; ++row) {
+                Color ignoreColor;
+                if (!isColorPreciseEnough({picture.getAt(col, row),
+                                           picture.getAt(col + 1, row),
+                                           picture.getAt(col, row + 1),
+                                           picture.getAt(col - 1, row),
+                                           picture.getAt(col, row - 1)}, ignoreColor)) {
 #ifndef HIGHLIGHT_ALIASING
-                Point newTopLeft(colVector * col + rowVector * row + camera.topLeft);
-                Point newBottomRight(colVector * (col + 1) + rowVector * (row + 1) + camera.topLeft);
-                AAtaskQueue.push(Task(Task::TaskType::AA, col, row, Point(), newTopLeft, newBottomRight));
+                    Point newTopLeft(colVector * col + rowVector * row + camera.topLeft);
+                    Point newBottomRight(colVector * (col + 1) + rowVector * (row + 1) + camera.topLeft);
+                    AAtaskQueue.push(Task(Task::TaskType::AA, col, row, Point(), newTopLeft, newBottomRight));
 //                newPic.setAt(col, row, mixSubPixels(newTopLeft, newBottomRight, 0));
 #endif  //  HIGHLIGHT_ALIASING
 #ifdef HIGHLIGHT_ALIASING
-                newPic.setAt(col, row, CL_RED);
+                    newPic.setAt(col, row, CL_RED);
 #endif  //  HIGHLIGHT_ALIASING
-            } else {
-                newPic.setAt(col, row, picture.getAt(col, row));
-            }
+                } else {
+                    newPic.setAt(col, row, picture.getAt(col, row));
+                }
 //            // Отображение прогресса.
 //            if (col == pixelNumberWidth - 2 || col % 50 == 0) {
 //                std::cout << '\r' << "AA " << 100 * col / (pixelNumberWidth - 2) << "%";
 //                std::cout.flush();
 //            }
+            }
         }
+        AAtaskQueue.close();
+        for (std::thread &thread : AAthreads) {
+            thread.join();
+        }
+        picture = std::move(newPic);
     }
-    AAtaskQueue.close();
-    for (std::thread &thread : AAthreads) {
-        thread.join();
-    }
-    picture = std::move(newPic);
-#endif  // ENABLE_ANTIALIASING
 
     auto endTime = std::chrono::steady_clock::now();
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
@@ -104,23 +99,24 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
 
     auto obstacleMaterial = obstacle->getMaterial();
     auto obstacleColor = obstacle->getColorAt(hitPoint);
+    if (!properties.enableIllumination) {
+        return obstacleColor;
+    }
+
     double surface = 1 - obstacleMaterial->reflectance - obstacleMaterial->transparency;
     surface = std::max(0., surface);//todo: a + b + c = 1; diffuse is also property
-    Color finalColor = CL_BLACK;
+    Color finalColor = computeDiffuseColor(obstacle, hitPoint, ray) * surface;
 
-#ifdef ENABLE_ILLUMINATION
-    finalColor = computeDiffuseColor(obstacle, hitPoint, ray) * surface;
+    if (properties.enableReflection) {
+        finalColor += computeReflectionColor(obstacle, hitPoint, ray, restDepth)
+                      * obstacleMaterial->reflectance;
+    }
 
-#ifdef ENABLE_REFLECTION
-    finalColor += computeReflectionColor(obstacle, hitPoint, ray, restDepth) * obstacleMaterial->reflectance;
-#endif  // ENABLE_REFLECTION
+    if (properties.enableRefraction) {
+        finalColor += (computeRefractionColor(obstacle, hitPoint, ray, restDepth) * obstacleColor)
+                      * obstacleMaterial->transparency;
+    }
 
-#ifdef ENABLE_REFRACTION
-    finalColor += (computeRefractionColor(obstacle, hitPoint, ray, restDepth) * obstacleColor)
-                  * obstacleMaterial->transparency;
-#endif  // ENABLE_REFRACTION
-
-#endif  // ENABLE_ILLUMINATION
     return finalColor;
 }
 
@@ -162,9 +158,9 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
         }
     }
 
-#ifdef ENABLE_INDIRECT_ILLUMINATION
-    total = total + computeIndirectIllumination(object, point);
-#endif  // ENABLE_INDIRECT_ILLUMINATION
+    if (properties.enableIndirectIllumination) {
+        total = total + computeIndirectIllumination(object, point);
+    }
 
     return object->getColorAt(point) * total;
 }
