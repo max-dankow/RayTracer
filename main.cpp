@@ -21,6 +21,7 @@ void printSizes() {
     std::cout << "Photon " << sizeof(Photon) << "\n";
     std::cout << "KD Node " << sizeof(KdNode) << "\n";
     std::cout << "Color " << sizeof(Color) << "\n";
+    std::cout << "Task " << sizeof(Task) << "\n";
 }
 
 SceneData readFiles(const std::vector<std::string> &paths) {

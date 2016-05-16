@@ -63,6 +63,11 @@ public:
         return colorMap[width * row + col];
     }
 
+    Color *getPointerAt(size_t col, size_t row) {
+        assert(col >= 0 && row >= 0 && col < width && row < height);
+        return &(colorMap[width * row + col]);
+    }
+
     void setAt(size_t col, size_t row, const Color &pixel) {
         assert(col >= 0 && row >= 0 && col < width && row < height);
         colorMap[width * row + col] = pixel;

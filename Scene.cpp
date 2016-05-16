@@ -3,7 +3,6 @@
 #include "Scene.h"
 
 Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
-
     Vector3d colVector = Vector3d(camera.topLeft, camera.topRight) / pixelNumberWidth;
     Vector3d rowVector = Vector3d(camera.topLeft, camera.bottomLeft) / pixelNumberHeight;
     Picture picture(pixelNumberWidth, pixelNumberHeight);
@@ -13,7 +12,7 @@ Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
     SyncQueue<std::vector<Task> > taskQueue;
     std::vector<std::thread> threads;
     for (size_t i = 0; i < THREAD_NUMBER; ++i) {
-        threads.emplace_back(&Scene::worker, this, std::ref(taskQueue), std::ref(picture));
+        threads.emplace_back(&Scene::worker, this, std::ref(taskQueue));
     }
 
     std::cout << "Start rendering scene "
@@ -22,9 +21,9 @@ Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
 
     for (size_t col = 0; col < pixelNumberWidth; ++col) {
         for (size_t row = 0; row < pixelNumberHeight; ++row) {
-            // Смещаем 0.5 чтобы попасть в серединку пикселя.
-            Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + camera.topLeft);
-            taskQueue.push(Task(Task::TaskType::Trace, col, row, pixel));
+            Point topLeft(colVector * col + rowVector * row + camera.topLeft);
+            Task task(topLeft,colVector, rowVector, 1, 1, picture.getPointerAt(col, row));
+            taskQueue.push(task);
         }
     }
     taskQueue.close();
@@ -33,56 +32,16 @@ Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
     }
 
     if (properties.enableAntiAliasing) {
-        Picture newPic(pixelNumberWidth, pixelNumberHeight);
-
-        SyncQueue<std::vector<Task> > AAtaskQueue;
-        std::vector<std::thread> AAthreads;
-        for (size_t i = 0; i < THREAD_NUMBER; ++i) {
-            AAthreads.emplace_back(&Scene::worker, this, std::ref(AAtaskQueue), std::ref(newPic));
-        }
-        std::cout << "Running Adaptive AntiAliasing (x"
-        << properties.antiAliasingWidth * properties.antiAliasingHeight
-        << ") with " << THREAD_NUMBER << " threads...\n";
-        // Выделение ступенчатых учатсков.
-        for (size_t col = 1; col < pixelNumberWidth - 1; ++col) {
-            for (size_t row = 1; row < pixelNumberHeight - 1; ++row) {
-                Color ignoreColor;
-                if (!isColorPreciseEnough({picture.getAt(col, row),
-                                           picture.getAt(col + 1, row),
-                                           picture.getAt(col, row + 1),
-                                           picture.getAt(col - 1, row),
-                                           picture.getAt(col, row - 1)}, ignoreColor)) {
-#ifndef HIGHLIGHT_ALIASING
-                    Point newTopLeft(colVector * col + rowVector * row + camera.topLeft);
-                    Point newBottomRight(colVector * (col + 1) + rowVector * (row + 1) + camera.topLeft);
-                    AAtaskQueue.push(Task(Task::TaskType::AA, col, row, Point(), newTopLeft, newBottomRight));
-//                newPic.setAt(col, row, mixSubPixels(newTopLeft, newBottomRight, 0));
-#endif  //  HIGHLIGHT_ALIASING
-#ifdef HIGHLIGHT_ALIASING
-                    newPic.setAt(col, row, CL_RED);
-#endif  //  HIGHLIGHT_ALIASING
-                } else {
-                    newPic.setAt(col, row, picture.getAt(col, row));
-                }
-//            // Отображение прогресса.
-//            if (col == pixelNumberWidth - 2 || col % 50 == 0) {
-//                std::cout << '\r' << "AA " << 100 * col / (pixelNumberWidth - 2) << "%";
-//                std::cout.flush();
-//            }
-            }
-        }
-        AAtaskQueue.close();
-        for (std::thread &thread : AAthreads) {
-            thread.join();
-        }
-        picture = std::move(newPic);
+        picture = smooth(picture);
     }
 
     auto endTime = std::chrono::steady_clock::now();
     auto workTime = std::chrono::seconds(std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count());
+
     std::cout << "Rendering finished\n"
     << "Total time " << workTime.count() / 60 << "m "
     << workTime.count() % 60 << "s\n";
+
     return picture;
 }
 
@@ -206,23 +165,14 @@ Color Scene::computeRefractionColor(Object3d *object, const Point &point, const 
     return CL_BLACK;
 }
 
-void Scene::worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture) {
+void Scene::worker(SyncQueue<std::vector<Task> > &tasks) {
     while (true) {
         Task result;
         if ((tasks.popOrWait()).some(result)) {
-            Color color;
-            switch (result.type) {
-                case Task::TaskType::Trace:
-                    color = computeRayColor(Ray(camera.viewPoint, result.point - camera.viewPoint), MAX_DEPTH);
-                    break;
-                case Task::TaskType::AA:
-                    color = mixSubPixels(result.topLeft, result.bottomRight, 0);
-                    break;
-                default:
-                    assert(false);
-            }
-            picture.setAt(result.col, result.row, color);
-            // Отображение прогресса.
+            auto color = mixSubPixels(result.topLeft, result.colVector, result.rowVector,
+                                      result.pixelNumberWidth, result.pixelNumberHeight);
+            *(result.target) = color;
+            //todo: Отображение прогресса.
 //            if (n++ % 1000 == 0) {
 //                std::cout << '\r' << "Rendering " << 100 * n / (pixelNumberWidth * pixelNumberHeight) << "%";
 //                std::cout.flush();
@@ -233,4 +183,50 @@ void Scene::worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture) {
             }
         }
     }
+}
+
+Picture Scene::smooth(const Picture &picture) {
+    size_t pixelNumberWidth = picture.getWidth();
+    size_t pixelNumberHeight = picture.getHeight();
+    Picture smoothed(pixelNumberWidth, pixelNumberHeight);
+
+    Vector3d colVector = Vector3d(camera.topLeft, camera.topRight) / pixelNumberWidth;
+    Vector3d rowVector = Vector3d(camera.topLeft, camera.bottomLeft) / pixelNumberHeight;
+
+    SyncQueue<std::vector<Task> > taskQueue;
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < THREAD_NUMBER; ++i) {
+        threads.emplace_back(&Scene::worker, this, std::ref(taskQueue));
+    }
+
+    std::cout << "Running Adaptive AntiAliasing x"
+    << properties.antiAliasingWidth * properties.antiAliasingHeight
+    << " with " << THREAD_NUMBER << " threads...\n";
+
+    // Выделение ступенчатых учатсков.
+    for (size_t col = 1; col < pixelNumberWidth - 1; ++col) {
+        for (size_t row = 1; row < pixelNumberHeight - 1; ++row) {
+            Color ignoreColor;
+            if (!isColorPreciseEnough({picture.getAt(col, row),
+                                       picture.getAt(col + 1, row),
+                                       picture.getAt(col, row + 1),
+                                       picture.getAt(col - 1, row),
+                                       picture.getAt(col, row - 1)}, ignoreColor)) {
+                Point topLeft(colVector * col + rowVector * row + camera.topLeft);
+                Task task(topLeft, colVector, rowVector,
+                          (unsigned char) properties.antiAliasingWidth,
+                          (unsigned char) properties.antiAliasingHeight,
+                          smoothed.getPointerAt(col, row));
+                taskQueue.push(task);
+//                smoothed.setAt(col, row, CL_RED);//todo: use it to minimize color_precise parameter
+            } else {
+                smoothed.setAt(col, row, picture.getAt(col, row));
+            }
+        }
+    }
+    taskQueue.close();
+    for (std::thread &thread : threads) {
+        thread.join();
+    }
+    return smoothed;
 }

@@ -10,31 +10,14 @@
 #include "SyncQueue/SyncQueue.h"
 #include "PhotonMap.h"
 
-struct Task {
-    enum TaskType {
-        Trace,
-        AA
-    };
-
-    Task() = default;
-
-
-    Task(TaskType type, size_t col, size_t row, const Point &point, const Point &topLeft = Point(),
-         const Point &bottomRight = Point()) :
-            type(type), col(col), row(row), point(point), topLeft(topLeft), bottomRight(bottomRight) { }
-
-    TaskType type;
-    size_t col, row;
-    Point point;
-    Point topLeft, bottomRight;
-};
-
 struct Camera {
 
     Camera() { }
 
-    Camera(const Point &viewPoint, const Point &topLeft, const Point &bottomLeft, const Point &topRight) :
-            viewPoint(viewPoint), topLeft(topLeft), bottomLeft(bottomLeft), topRight(topRight) { }
+    Camera(const Point &viewPoint, const Point &topLeft,
+           const Point &bottomLeft, const Point &topRight) :
+            viewPoint(viewPoint), topLeft(topLeft),
+            bottomLeft(bottomLeft), topRight(topRight) { }
 
     Point viewPoint, topLeft, bottomLeft, topRight;
 };
@@ -110,6 +93,24 @@ struct SceneProperties {
     size_t antiAliasingWidth = 4, antiAliasingHeight = 4;
 };
 
+struct Task {
+    Task() { }
+
+    Task(const Point &topLeft, const Vector3d &colVector,
+         const Vector3d &rowVector, unsigned char pixelNumberWidth,
+         unsigned char pixelNumberHeight, Color *target) :
+            topLeft(topLeft),
+            colVector(colVector), rowVector(rowVector),
+            pixelNumberWidth(pixelNumberWidth),
+            pixelNumberHeight(pixelNumberHeight),
+            target(target) { }
+
+    Point topLeft;
+    Vector3d colVector, rowVector;
+    unsigned char pixelNumberWidth, pixelNumberHeight;
+    Color *target;
+};
+
 class Scene {
 public:
 
@@ -167,7 +168,7 @@ private:
         return Color(r / sphereArea, g / sphereArea, b / sphereArea);
     }
 
-    Color mixColors(const std::vector<Color> &neighbors) {
+    Color mixColors(const std::vector<Color> &neighbors) const {
         double r = 0, g = 0, b = 0;
         for (Color color : neighbors) {
             r += color.r;
@@ -180,9 +181,9 @@ private:
         return Color(r, g, b);
     }
 
-    void worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture);
+    void worker(SyncQueue<std::vector<Task> > &tasks);
 
-    bool isColorPreciseEnough(const std::vector<Color> &neighbors, Color &mixedColor) {
+    bool isColorPreciseEnough(const std::vector<Color> &neighbors, Color &mixedColor) const {
         const double COLOR_PRECISION = 0.05;
         mixedColor = mixColors(neighbors);
 
@@ -197,38 +198,26 @@ private:
         return true;
     }
 
-    Color mixSubPixels(const Point &topLeft, const Point &bottomRight, int depth) {
-        Vector3d colVector = Vector3d(bottomRight.x - topLeft.x,
-                                      0, bottomRight.z - topLeft.z) / properties.antiAliasingWidth;
-        Vector3d rowVector = Vector3d(0, bottomRight.y - topLeft.y, 0) / properties.antiAliasingHeight;
-//        Picture picture(AAScale, AAScale);
+    Color mixSubPixels(const Point &topLeft, const Vector3d &colVector, const Vector3d &rowVector,
+                       size_t pixelNumberWidth, size_t pixelNumberHeight) {
+        assert(pixelNumberWidth > 0 && pixelNumberHeight > 0);
         std::vector<Color> colors;
-//        Color picture[2][2];
+        auto colSubVector = colVector * (1. / pixelNumberWidth);
+        auto rowSubVector = rowVector * (1. / pixelNumberHeight);
+        colors.reserve(pixelNumberWidth * pixelNumberWidth);
 
-        for (size_t col = 0; col < properties.antiAliasingWidth; ++col) {
-            for (size_t row = 0; row < properties.antiAliasingHeight; ++row) {
+        for (size_t col = 0; col < pixelNumberWidth; ++col) {
+            for (size_t row = 0; row < pixelNumberHeight; ++row) {
                 // Смещаем 0.5 чтобы попасть в серединку пикселя.
-                Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + topLeft);
+                Point pixel(colSubVector * (0.5 + col) + rowSubVector * (0.5 + row) + topLeft);
                 auto color = computeRayColor(Ray(camera.viewPoint, pixel - camera.viewPoint), MAX_DEPTH);
                 colors.push_back(color);
             }
         }
-//        Color localColor;
-//        bool enough = isColorPreciseEnough(picture.getColorMap(), localColor);
-//
-//        if (!enough && (depth < 0)) {
-//
-//            for (size_t col = 0; col < AAScale; ++col) {
-//                for (size_t row = 0; row < AAScale; ++row) {
-//                    Point newTopLeft(colVector * col + rowVector * row + topLeft);
-//                    Point newBottomRight(colVector * (col + 1) + rowVector * (row + 1) + topLeft);
-//                    picture.setAt(col, row, mixSubPixels(newTopLeft, newBottomRight, depth + 1));
-//                }
-//            }
-//            localColor = mixColors(picture.getColorMap());
-//        }
         return mixColors(colors);
     }
+
+    Picture smooth(const Picture &picture);
 
     static const int MAX_DEPTH = 10;
     const size_t THREAD_NUMBER = std::thread::hardware_concurrency();
