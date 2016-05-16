@@ -6,14 +6,14 @@
 // Интерфейс Painter предоставляет отрисовку Picture на холсте заданного рамера.
 class Painter {
 public:
-    Painter(unsigned screenWidth, unsigned screenHeight) : screenWidth(screenWidth), screenHeight(screenHeight) { }
+    Painter(size_t screenWidth, size_t screenHeight) : screenWidth(screenWidth), screenHeight(screenHeight) { }
 
     Painter(const Painter &) = delete;
 
     virtual void showPicture(const Picture &)=0;
 
 protected:
-    unsigned screenWidth, screenHeight;
+    size_t screenWidth, screenHeight;
 };
 
 #endif //RAYTRACER_PAINTER_H

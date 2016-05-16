@@ -44,11 +44,11 @@ int main(int argc, char *argv[]) {
 
     Picture picture;
     Scene scene(std::move(sceneData), arguments.sceneProperties);
-    picture = scene.render(800, 600);
+    picture = scene.render(arguments.pictureWidth, arguments.pictureHeight);
 
-//    CairoPainter cairoPainter(800, 600, "Ray Tracer");
-//    cairoPainter.showPicture(picture);
-    PNGPainter painter(800, 600, createFileName("./results/", ".png"));
+    CairoPainter cairoPainter(arguments.pictureWidth, arguments.pictureHeight, "Ray Tracer");
+    cairoPainter.showPicture(picture);
+    PNGPainter painter(arguments.pictureWidth, arguments.pictureHeight, createFileName("./results/", ".png"));
     painter.showPicture(picture);
     return 0;
 }

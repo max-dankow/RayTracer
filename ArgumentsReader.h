@@ -11,6 +11,7 @@ struct Arguments {
 
     SceneProperties sceneProperties;
     bool helpFlag = false;
+    size_t pictureWidth, pictureHeight;
 };
 
 class ArgumentsReader {
@@ -21,7 +22,7 @@ public:
         size_t current = 1;
         size_t argumentsNumber = (size_t) argc;
         std::string argument;
-        while(nextArgument(current, argumentsNumber, argv, argument)) {
+        while (nextArgument(current, argumentsNumber, argv, argument)) {
             if (argument == "--help") {
                 printHelp(std::cout);
                 arguments.helpFlag = true;
@@ -55,6 +56,28 @@ public:
                 arguments.sceneProperties.enableAntiAliasing = true;
                 continue;
             }
+            if (argument == "--aascales") {
+                std::string width, height;
+                if (nextArgument(current, argumentsNumber, argv, width)
+                    && nextArgument(current, argumentsNumber, argv, height)) {
+                    arguments.sceneProperties.antiAliasingWidth = (size_t) std::stoi(width);
+                    arguments.sceneProperties.antiAliasingHeight = (size_t) std::stoi(height);
+                } else {
+                    throw std::invalid_argument("Failed to read anti aliasing scales");
+                }
+                continue;
+            }
+            if (argument == "--sizes") {
+                std::string width, height;
+                if (nextArgument(current, argumentsNumber, argv, width)
+                    && nextArgument(current, argumentsNumber, argv, height)) {
+                    arguments.pictureWidth = (size_t) std::stoi(width);
+                    arguments.pictureHeight = (size_t) std::stoi(height);
+                } else {
+                    throw std::invalid_argument("Failed to read picture sizes");
+                }
+                continue;
+            }
             std::cerr << "[Warning] Unknown argument '" << argument << "'\n";
         }
         return arguments;
@@ -63,12 +86,14 @@ public:
     static void printHelp(std::ostream &output) {
         output << "Welcome to RayTracer. Usage:\n"
         << "[--help] - show this help message\n"
+        << "[--sizes] <width in pixels> <height in pixels> - set target picture sizes(800x600 by default)\n"
         << "[--nolight] - disable all illumination, and consequently any other optical effects (enabled by default)\n"
         << "[--norefl] - disable reflection (enabled by default)\n"
         << "[--norefr] - disable refraction (enabled by default)\n"
         << "[--complexlight] - enable complex illumination\n"
         << "[--photons] <number> - set photons number (5000000 photons by default)\n"
-        << "[--adaptiveaa] - enable adaptive anti aliasing (x16 by default)\n";
+        << "[--adaptiveaa] - enable adaptive anti aliasing (x16 by default)\n"
+        << "[--aascales] <width pixels> <height pixels> - set pixel subdivision(x16 (by default) means 4 * 4)\n";
     }
 
 private:

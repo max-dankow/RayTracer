@@ -4,17 +4,23 @@
 #include "Scene.h"
 
 Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
+
     Vector3d colVector = Vector3d(camera.topLeft, camera.topRight) / pixelNumberWidth;
     Vector3d rowVector = Vector3d(camera.topLeft, camera.bottomLeft) / pixelNumberHeight;
     Picture picture(pixelNumberWidth, pixelNumberHeight);
+
     auto startTime = std::chrono::steady_clock::now();
+
     SyncQueue<std::vector<Task> > taskQueue;
     std::vector<std::thread> threads;
     for (size_t i = 0; i < THREAD_NUMBER; ++i) {
         threads.emplace_back(&Scene::worker, this, std::ref(taskQueue), std::ref(picture));
     }
 
-    std::cout << "Start rendering scene with " << THREAD_NUMBER << " threads...\n";
+    std::cout << "Start rendering scene "
+    << pixelNumberWidth << "x" << pixelNumberHeight
+    << " with " << THREAD_NUMBER << " threads...\n";
+
     for (size_t col = 0; col < pixelNumberWidth; ++col) {
         for (size_t row = 0; row < pixelNumberHeight; ++row) {
             // Смещаем 0.5 чтобы попасть в серединку пикселя.
@@ -35,7 +41,9 @@ Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
         for (size_t i = 0; i < THREAD_NUMBER; ++i) {
             AAthreads.emplace_back(&Scene::worker, this, std::ref(AAtaskQueue), std::ref(newPic));
         }
-        std::cout << "Running Adaptive AntiAliasing with " << THREAD_NUMBER << " threads...\n";
+        std::cout << "Running Adaptive AntiAliasing (x"
+        << properties.antiAliasingWidth * properties.antiAliasingHeight
+        << ") with " << THREAD_NUMBER << " threads...\n";
         // Выделение ступенчатых учатсков.
         for (size_t col = 1; col < pixelNumberWidth - 1; ++col) {
             for (size_t row = 1; row < pixelNumberHeight - 1; ++row) {

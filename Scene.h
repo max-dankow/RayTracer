@@ -37,7 +37,7 @@ struct Camera{
     Point viewPoint, topLeft, bottomLeft, topRight;
 };
 
-static Camera DEFAULT_CAMERA(Point(0, 0, -2), Point(2, 1.5, 0), Point(2, -1.5, 0), Point(-2, 1.5, 0));
+static Camera DEFAULT_CAMERA(Point(0, 0, 12), Point(2, 1.5, 10), Point(2, -1.5, 10), Point(-2, 1.5, 10));
 
 struct SceneData {
     SceneData() : camera(DEFAULT_CAMERA) { }
@@ -85,6 +85,7 @@ struct SceneProperties {
     bool enableIndirectIllumination = false;
     bool enableAntiAliasing = false;
     size_t photonsNumber = 5000000;
+    size_t antiAliasingWidth = 4, antiAliasingHeight = 4;
 };
 
 class Scene {
@@ -175,20 +176,18 @@ private:
     }
 
     Color mixSubPixels(const Point &topLeft, const Point &bottomRight, int depth) {
-        const size_t AAScale = 4;
         Vector3d colVector = Vector3d(bottomRight.x - topLeft.x,
-                                      0, bottomRight.z - topLeft.z) / AAScale;
-        Vector3d rowVector = Vector3d(0, bottomRight.y - topLeft.y, 0) / AAScale;
+                                      0, bottomRight.z - topLeft.z) / properties.antiAliasingWidth;
+        Vector3d rowVector = Vector3d(0, bottomRight.y - topLeft.y, 0) / properties.antiAliasingHeight;
 //        Picture picture(AAScale, AAScale);
         std::vector<Color> colors;
 //        Color picture[2][2];
 
-        for (size_t col = 0; col < AAScale; ++col) {
-            for (size_t row = 0; row < AAScale; ++row) {
+        for (size_t col = 0; col < properties.antiAliasingWidth; ++col) {
+            for (size_t row = 0; row < properties.antiAliasingHeight; ++row) {
                 // Смещаем 0.5 чтобы попасть в серединку пикселя.
                 Point pixel(colVector * (0.5 + col) + rowVector * (0.5 + row) + topLeft);
                 auto color = computeRayColor(Ray(camera.viewPoint, pixel - camera.viewPoint), MAX_DEPTH);
-//                picture.setAt(col, row,color);
                 colors.push_back(color);
             }
         }

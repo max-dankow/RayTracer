@@ -6,7 +6,7 @@
 
 class PNGPainter : public Painter {
 public:
-    PNGPainter(unsigned int screenWidth, unsigned int screenHeight, std::string filename) :
+    PNGPainter(size_t screenWidth, size_t screenHeight, std::string filename) :
             Painter(screenWidth, screenHeight), fileName(filename) { }
 
     virtual void showPicture(const Picture &picture) {

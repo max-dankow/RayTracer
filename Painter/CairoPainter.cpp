@@ -2,8 +2,8 @@
 #include <iostream>
 #include "CairoPainter.h"
 
-CairoPainter::CairoPainter(unsigned int screenWidth,
-                           unsigned int screenHeight,
+CairoPainter::CairoPainter(size_t screenWidth,
+                           size_t screenHeight,
                            const std::string &windowTitle) :
         Painter(screenWidth, screenHeight),
         windowTitle(windowTitle) { }
@@ -34,7 +34,7 @@ void CairoPainter::showPicture(const Picture &picture) {
                      NULL);
 
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_window_set_default_size(GTK_WINDOW(window), screenWidth, screenHeight);
+    gtk_window_set_default_size(GTK_WINDOW(window), (gint) screenWidth, (gint) screenHeight);
     gtk_window_set_title(GTK_WINDOW(window), windowTitle.c_str());
     gtk_widget_show_all(window);
     gtk_main();
@@ -42,7 +42,6 @@ void CairoPainter::showPicture(const Picture &picture) {
 
 // Рисует пиксель с указанными координатами указанным цветом.
 void CairoPainter::putPoint(size_t column, size_t row, const Color &color, cairo_t *cr) {
-    // todo: сделать scale с размерами окна.
     const size_t PIXEL_SIZE = 1;
     cairo_set_source_rgb(cr, color.r, color.g, color.b);
     cairo_rectangle(cr, column * PIXEL_SIZE, row * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);

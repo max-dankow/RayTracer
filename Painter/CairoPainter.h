@@ -9,7 +9,7 @@
 class CairoPainter : public Painter {
 
 public:
-    CairoPainter(unsigned int screenWidth, unsigned int screenHeight, const std::string &windowTitle);
+    CairoPainter(size_t screenWidth, size_t screenHeight, const std::string &windowTitle);
 
     virtual void showPicture(const Picture &picture);
 
