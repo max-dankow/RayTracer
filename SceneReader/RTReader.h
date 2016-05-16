@@ -7,6 +7,7 @@
 #include "../Objects/Sphere.h"
 #include "../Objects/Triangle3d.h"
 #include "../Objects/PlaneQuadrangle.h"
+#include "../LightSources/PointLight.h"
 
 using std::string;
 
@@ -120,9 +121,9 @@ private:
 
     PlaneQuadrangle *readQuadrangle(std::ifstream &input, const std::map<string, const Material *> &materials);
 
-    Material * readMaterials(std::ifstream &input, std::map<string, const Material *> &materials);
+    Material *readMaterials(std::ifstream &input, std::map<string, const Material *> &materials);
 
-    PointLight * readPointLight(std::ifstream &input) {
+    PointLight *readPointLight(std::ifstream &input) {
         string property;
         Point center;
         double power = 0;
@@ -187,7 +188,7 @@ Material *RTReader::readMaterials(std::ifstream &input, std::map<string, const M
     string name;
     Color color = CL_WHITE;
     double reflectance = 0;
-    double refractiveIndex = 0;
+    double refractiveIndex = 1;
     double transparency = 0;
     while (getNextWord(input, property)) {
         if (property == "endentry") {

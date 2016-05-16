@@ -3,11 +3,6 @@
 #include <thread>
 #include "Scene.h"
 
-#define ENABLE_ILLUMINATION
-#define ENABLE_REFLECTION
-#define ENABLE_REFRACTION
-#define ENABLE_INDIRECT_ILLUMINATION
-
 //#define ENABLE_ANTIALIASING
 //#define HIGHLIGHT_ALIASING
 

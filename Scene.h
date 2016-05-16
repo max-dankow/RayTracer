@@ -13,6 +13,11 @@
 #include "SyncQueue/SyncQueue.h"
 #include "PhotonMap.h"
 
+#define ENABLE_ILLUMINATION
+#define ENABLE_REFLECTION
+#define ENABLE_REFRACTION
+#define ENABLE_INDIRECT_ILLUMINATION
+
 struct Task {
     enum TaskType {
         Trace,
@@ -42,18 +47,52 @@ struct Camera{
 
 static Camera DEFAULT_CAMERA(Point(0, 0, -2), Point(2, 1.5, 0), Point(2, -1.5, 0), Point(-2, 1.5, 0));
 
+struct SceneData {
+    SceneData() : camera(DEFAULT_CAMERA) { }
+
+    SceneData(const Camera &camera, std::vector<Object3d *> &&objects, std::vector<LightSource *> &&lights) :
+            camera(camera),
+            objects(std::move(objects)),
+            lights(std::move(lights)) { }
+
+    SceneData(SceneData &&other) :
+            camera(other.camera),
+            objects(std::move(other.objects)),
+            lights(std::move(other.lights)) { }
+
+    void addObject(Object3d* &&object) {
+        objects.push_back(object);
+        object = nullptr;
+    }
+
+    void addMaterial(Material* &&material) {
+        materials.push_back(material);
+        material = nullptr;
+    }
+
+    void addLightSource(LightSource* &&lightSource) {
+        lights.push_back(lightSource);
+        lightSource = nullptr;
+    }
+
+    Camera camera;
+    std::vector<Object3d *> objects;
+    std::vector<LightSource *> lights;
+    std::vector<Material *> materials;
+};
+
 class Scene {
 public:
 
-    Scene(const Camera &camera,
-          std::vector<Object3d *> &&objects,
-          std::vector<LightSource *> &&lights,
+    Scene(SceneData &&sceneData,
           size_t photonsNumber = 1000000) :
-            camera(camera),
-            objectList(std::move(objects)),
-            lights(std::move(lights)) {
+            camera(sceneData.camera),
+            objectList(std::move(sceneData.objects)),
+            lights(std::move(sceneData.lights)) {
         this->objects = KdTree(std::vector<GeometricShape *>(objectList.begin(), objectList.end()));
+#ifdef ENABLE_INDIRECT_ILLUMINATION
         this->photonMap = PhotonMap(this->lights, this->objects, photonsNumber);
+#endif
     }
 
     ~Scene() {
@@ -68,12 +107,7 @@ public:
 
     Picture render(size_t pixelNumberWidth, size_t pixelNumberHeight);
 
-    static std::vector<Object3d *> &mergeObjects(std::vector<Object3d *> &base,
-                                                 std::vector<Object3d *> &&other) {
-        std::move(other.begin(), other.end(), std::back_inserter(base));
-        other.clear();
-        return base;
-    }
+
 
 private:
     const Color computeRayColor(const Ray &ray, int restDepth);
