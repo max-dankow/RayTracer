@@ -1,5 +1,4 @@
 #include <chrono>
-#include <stack>
 #include <thread>
 #include "Scene.h"
 
@@ -98,7 +97,7 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
 
     // Используя Kd дерево ищем пересечения со сценой.
     Point hitPoint;
-    Object3d *obstacle = dynamic_cast<Object3d*> (objects.findObstacle(ray, hitPoint));
+    Object3d *obstacle = dynamic_cast<Object3d *> (objects.findObstacle(ray, hitPoint));
 
     // Если не нашли пересечений.
     if (obstacle == nullptr) {
@@ -140,9 +139,10 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
         Ray lightRay(point, lightDirection);
         double sqrDistanceToLight = lightDirection.lengthSquared();
 
-        // Если луч направлен с противоположной стороны от осточника относительно примитива, то отсекаем его.
+        // Если луч направлен с противоположной стороны от осточника относительно примитива, то отсекаем его,
+        // или если смотрим с изнаночной стороны.
         double dotNormalLight = Vector3d::dotProduct(object->getNormal(point), lightRay.getDirection());
-        if (dotNormalLight * dotNormalRay >= 0 || Geometry::areDoubleEqual(sqrDistanceToLight, 0)) {
+        if (dotNormalLight <= 0 || dotNormalRay >= 0 || Geometry::areDoubleEqual(sqrDistanceToLight, 0)) {
             continue;
         }
         lightRay.push();
@@ -181,7 +181,8 @@ Color Scene::computeReflectionColor(Object3d *object, const Point &point, const 
     // Если имеет место отражение, продолжаем.
     Vector3d reflectionDirection = viewRay.reflectRay(object->getNormal(point));
     if (!Vector3d::isNullVector(reflectionDirection)) {
-        Ray reflectionRay(point, reflectionDirection, (float) (viewRay.getPower() * object->getMaterial()->reflectance));
+        Ray reflectionRay(point, reflectionDirection,
+                          (float) (viewRay.getPower() * object->getMaterial()->reflectance));
         Color obstacleColor = computeRayColor(reflectionRay, restDepth - 1);
         return obstacleColor;
     }
@@ -196,7 +197,8 @@ Color Scene::computeRefractionColor(Object3d *object, const Point &point, const 
             viewRay.refractRay(object->getNormal(point), object->getMaterial()->refractiveIndex);
     // Если имеет место преломление, продолжаем.
     if (!Vector3d::isNullVector(refractionDirection)) {
-        Ray refractionRay(point, refractionDirection, (float) (viewRay.getPower() * object->getMaterial()->transparency));
+        Ray refractionRay(point, refractionDirection,
+                          (float) (viewRay.getPower() * object->getMaterial()->transparency));
         refractionRay.push();
         Color obstacleColor = computeRayColor(refractionRay, restDepth - 1);
         return obstacleColor;
@@ -205,7 +207,6 @@ Color Scene::computeRefractionColor(Object3d *object, const Point &point, const 
 }
 
 void Scene::worker(SyncQueue<std::vector<Task> > &tasks, Picture &picture) {
-    int n = 0;
     while (true) {
         Task result;
         if ((tasks.popOrWait()).some(result)) {

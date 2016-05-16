@@ -11,7 +11,8 @@ struct Arguments {
 
     SceneProperties sceneProperties;
     bool helpFlag = false;
-    size_t pictureWidth, pictureHeight;
+    size_t pictureWidth = 800, pictureHeight = 600;
+    std::vector<std::string> files;
 };
 
 class ArgumentsReader {
@@ -78,6 +79,15 @@ public:
                 }
                 continue;
             }
+            if (argument == "--import") {
+                std::string path;
+                if (nextArgument(current, argumentsNumber, argv, path)) {
+                    arguments.files.push_back(path);
+                } else {
+                    throw std::invalid_argument("Failed to read file path");
+                }
+                continue;
+            }
             std::cerr << "[Warning] Unknown argument '" << argument << "'\n";
         }
         return arguments;
@@ -87,6 +97,7 @@ public:
         output << "Welcome to RayTracer. Usage:\n"
         << "[--help] - show this help message\n"
         << "[--sizes] <width in pixels> <height in pixels> - set target picture sizes(800x600 by default)\n"
+        << "[--import] <path> - import scene using camera from the first entry (.rt and ASCII .stl are supported)\n"
         << "[--nolight] - disable all illumination, and consequently any other optical effects (enabled by default)\n"
         << "[--norefl] - disable reflection (enabled by default)\n"
         << "[--norefr] - disable refraction (enabled by default)\n"

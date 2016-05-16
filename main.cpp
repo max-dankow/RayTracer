@@ -2,15 +2,9 @@
 #include "Painter/CairoPainter.h"
 #include "Scene.h"
 #include "SceneReader/TextSTLReader.h"
-#include "Objects/Sphere.h"
-#include "Objects/Parallelogram.h"
-#include "Objects/Triangle3d.h"
-#include "LightSources/PointLight.h"
-#include "PhotonMap.h"
 #include "SceneReader/RTReader.h"
-#include <ctime>
-#include "Painter/PNGPainter.h"
 #include "ArgumentsReader.h"
+#include "Painter/PNGPainter.h"
 
 std::string createFileName(const std::string &path, const std::string &extension) {
     std::time_t result = std::time(nullptr);
@@ -29,25 +23,71 @@ void printSizes() {
     std::cout << "Color " << sizeof(Color) << "\n";
 }
 
+SceneData readFiles(const std::vector<std::string> &paths) {
+    SceneData sceneData;
+    if (paths.empty()) {
+        return sceneData;
+    }
+    bool theFirst = true;
+    for (std::string path : paths) {
+        std::string extension;
+        if (path.find_last_of(".") != std::string::npos) {
+            extension = path.substr(path.find_last_of(".") + 1);
+        }
+        SceneData currentFileData;
+        bool success = false;
+        bool supportedFormat = false;
+        if (extension == "stl") {
+            supportedFormat = true;
+            TextSTLReader STLReader;
+            try {
+                currentFileData = STLReader.readScene(path);
+                success = true;
+            } catch (std::invalid_argument &e) {
+                std::cerr << e.what() << ' ' << path << std::endl;
+            }
+        }
+        if (extension == "rt" || extension == "tbd") {
+            supportedFormat = true;
+            RTReader readerRT;
+            try {
+                currentFileData = readerRT.readScene(path);
+                success = true;
+            } catch (std::invalid_argument &e) {
+                std::cerr << e.what() << ' ' << path << std::endl;
+            }
+        }
+        if (!success) {
+            if (!supportedFormat) {
+                std::cerr << "Unsupported format " << extension << std::endl;
+            }
+            continue;
+        }
+        if (theFirst) {
+            theFirst = false;
+            sceneData = std::move(currentFileData);
+        } else {
+            sceneData.merge(std::move(currentFileData));
+        }
+    }
+    return sceneData;
+}
+
 // todo : перейти на float
 int main(int argc, char *argv[]) {
     Arguments arguments = ArgumentsReader::readArguments(argc, argv);
-    ArgumentsReader::printHelp(std::cout);
+//    ArgumentsReader::printHelp(std::cout);
     if (arguments.helpFlag) {
         return 0;
     }
     printSizes();
-    RTReader readerRT;
+    SceneData sceneData = readFiles(arguments.files);
 
-//    objects = reader.readObjects("./STLScenes/invader.stl");
-    SceneData sceneData = readerRT.readScene("./RTScenes/example.rt");
-
-    Picture picture;
     Scene scene(std::move(sceneData), arguments.sceneProperties);
-    picture = scene.render(arguments.pictureWidth, arguments.pictureHeight);
+    auto picture = scene.render(arguments.pictureWidth, arguments.pictureHeight);
 
-    CairoPainter cairoPainter(arguments.pictureWidth, arguments.pictureHeight, "Ray Tracer");
-    cairoPainter.showPicture(picture);
+//    CairoPainter cairoPainter(arguments.pictureWidth, arguments.pictureHeight, "Ray Tracer");
+//    cairoPainter.showPicture(picture);
     PNGPainter painter(arguments.pictureWidth, arguments.pictureHeight, createFileName("./results/", ".png"));
     painter.showPicture(picture);
     return 0;

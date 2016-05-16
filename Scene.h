@@ -15,11 +15,13 @@ struct Task {
         Trace,
         AA
     };
-    Task()=default;
+
+    Task() = default;
 
 
-    Task(TaskType type, size_t col, size_t row, const Point &point, const Point &topLeft = Point(), const Point &bottomRight=Point()) :
-            type(type), col(col),row(row),point(point),topLeft(topLeft),bottomRight(bottomRight) { }
+    Task(TaskType type, size_t col, size_t row, const Point &point, const Point &topLeft = Point(),
+         const Point &bottomRight = Point()) :
+            type(type), col(col), row(row), point(point), topLeft(topLeft), bottomRight(bottomRight) { }
 
     TaskType type;
     size_t col, row;
@@ -27,7 +29,7 @@ struct Task {
     Point topLeft, bottomRight;
 };
 
-struct Camera{
+struct Camera {
 
     Camera() { }
 
@@ -37,7 +39,7 @@ struct Camera{
     Point viewPoint, topLeft, bottomLeft, topRight;
 };
 
-static Camera DEFAULT_CAMERA(Point(0, 0, 12), Point(2, 1.5, 10), Point(2, -1.5, 10), Point(-2, 1.5, 10));
+static Camera DEFAULT_CAMERA(Point(0, 0, 12), Point(-2, 1.5, 10), Point(-2, -1.5, 10), Point(2, 1.5, 10));
 
 struct SceneData {
     SceneData() : camera(DEFAULT_CAMERA) { }
@@ -57,17 +59,37 @@ struct SceneData {
             lights(std::move(other.lights)),
             materials(std::move(other.materials)) { }
 
-    void addObject(Object3d* &&object) {
+    SceneData &operator=(SceneData &&other) {
+        this->camera = other.camera;
+        this->objects = std::move(other.objects);
+        this->lights = std::move(other.lights);
+        this->materials = std::move(other.materials);
+        return *this;
+    }
+
+    SceneData& operator=(const SceneData&) = delete;
+    SceneData(const SceneData&) = delete;
+
+    void merge(SceneData &&other) {
+        std::move(other.objects.begin(), other.objects.end(), std::back_inserter(this->objects));
+        other.objects.clear();
+        std::move(other.lights.begin(), other.lights.end(), std::back_inserter(this->lights));
+        other.lights.clear();
+        std::move(other.materials.begin(), other.materials.end(), std::back_inserter(this->materials));
+        other.materials.clear();
+    }
+
+    void addObject(Object3d *&&object) {
         objects.push_back(object);
         object = nullptr;
     }
 
-    void addLightSource(LightSource* &&lightSource) {
+    void addLightSource(LightSource *&&lightSource) {
         lights.push_back(lightSource);
         lightSource = nullptr;
     }
 
-    void addMaterial(Material* &&material) {
+    void addMaterial(Material *&&material) {
         materials.push_back(material);
         material = nullptr;
     }
@@ -130,7 +152,7 @@ private:
         if (KNN.empty()) {
             return CL_BLACK;
         }
-        double r=0, g=0, b=0;
+        double r = 0, g = 0, b = 0;
         for (Photon *photon : KNN) {
             double k = -Vector3d::dotProduct(normal, photon->getRay().getDirection().normalize());
             if (k > 0) {
