@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include <map>
-#include "SceneReader.h"
 #include "../Objects/Sphere.h"
 #include "../Objects/Triangle3d.h"
 #include "../Objects/PlaneQuadrangle.h"
@@ -11,14 +10,14 @@
 
 using std::string;
 
-class RTReader : public SceneReader {
-
+class RTReader {
 public:
-    virtual SceneData readScene(const std::string &path) {
+    static SceneData readScene(const std::string &path) {
         std::ifstream input(path);
         if (!input) {
             throw std::invalid_argument("Can't read file");
         }
+        std::cout << "Reading " << path << std::endl;
         std::map<string, const Material *> materials;
         SceneData sceneData;
         string section;
@@ -87,11 +86,12 @@ public:
             showWarning(section);
         }
         input.close();
+        std::cout << "Read success: " << sceneData.objects.size() << " primitives" << std::endl;
         return sceneData;
     }
 
 private:
-    bool getNextWord(std::ifstream &input, string &word) {
+    static bool getNextWord(std::ifstream &input, string &word) {
         do {
             if (input.eof()) {
                 word.clear();
@@ -109,21 +109,21 @@ private:
         return true;
     }
 
-    Color readColor(std::ifstream &input) {
+    static Color readColor(std::ifstream &input) {
         unsigned r = 255, g = 255, b = 255;
         input >> r >> g >> b;
         return Color(((float) r) / 255, ((float) g) / 255, ((float) b) / 255);
     }
 
-    Sphere *readSphere(std::ifstream &input, const std::map<string, const Material *> &materials);
+    static Sphere *readSphere(std::ifstream &input, const std::map<string, const Material *> &materials);
 
-    Triangle3d *readTriangle(std::ifstream &input, const std::map<string, const Material *> &materials);
+    static Triangle3d *readTriangle(std::ifstream &input, const std::map<string, const Material *> &materials);
 
-    PlaneQuadrangle *readQuadrangle(std::ifstream &input, const std::map<string, const Material *> &materials);
+    static PlaneQuadrangle *readQuadrangle(std::ifstream &input, const std::map<string, const Material *> &materials);
 
-    Material *readMaterials(std::ifstream &input, std::map<string, const Material *> &materials);
+    static Material *readMaterials(std::ifstream &input, std::map<string, const Material *> &materials);
 
-    PointLight *readPointLight(std::ifstream &input) {
+    static PointLight *readPointLight(std::ifstream &input) {
         string property;
         Point center;
         double power = 0;
@@ -149,7 +149,7 @@ private:
         return new PointLight(center, power, color);
     }
 
-    Camera readCamera(std::ifstream &input) {
+    static Camera readCamera(std::ifstream &input) {
         string property;
         Camera newCamera = DEFAULT_CAMERA;
         while (getNextWord(input, property)) {
@@ -177,7 +177,7 @@ private:
         return newCamera;
     }
 
-    void showWarning(std::string unknownWord) {
+    static void showWarning(std::string unknownWord) {
         std::cerr << "[Warning] Unknown keyword '" << unknownWord << "'\n";
     }
 
@@ -211,7 +211,7 @@ Material *RTReader::readMaterials(std::ifstream &input, std::map<string, const M
             continue;
         }
         if (property == "alpha") {
-            input >> transparency;// todo: alpha = 1 - transparency?
+            input >> transparency;
             continue;
         }
         showWarning(property);

@@ -39,9 +39,8 @@ SceneData readFiles(const std::vector<std::string> &paths) {
         bool supportedFormat = false;
         if (extension == "stl") {
             supportedFormat = true;
-            TextSTLReader STLReader;
             try {
-                currentFileData = STLReader.readScene(path);
+                currentFileData = TextSTLReader::readScene(path);
                 success = true;
             } catch (std::invalid_argument &e) {
                 std::cerr << e.what() << ' ' << path << std::endl;
@@ -49,9 +48,8 @@ SceneData readFiles(const std::vector<std::string> &paths) {
         }
         if (extension == "rt" || extension == "tbd") {
             supportedFormat = true;
-            RTReader readerRT;
             try {
-                currentFileData = readerRT.readScene(path);
+                currentFileData = RTReader::readScene(path);
                 success = true;
             } catch (std::invalid_argument &e) {
                 std::cerr << e.what() << ' ' << path << std::endl;

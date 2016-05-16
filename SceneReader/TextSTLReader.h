@@ -4,13 +4,12 @@
 #include <fstream>
 #include <exception>
 #include "../Scene.h"
-#include "SceneReader.h"
 #include "../Objects/Triangle3d.h"
 
 // Считывает STL ASCII формат. Предназначен для печати на 3d принтере.
-class TextSTLReader : public SceneReader {
+class TextSTLReader {
 public:
-    virtual SceneData readScene(const std::string &path) {
+    static SceneData readScene(const std::string &path) {
         SceneData sceneData;
         std::ifstream input(path);
         if (!input) {
@@ -21,7 +20,6 @@ public:
         // solid <name>
         input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         size_t count = 0;
-        double reflectance = 0;
 
         while (!input.eof()) {
             // facet normal
@@ -54,12 +52,12 @@ public:
             }
 
             if (word == "endsolid") {
-                input.close();
-                std::cout << "Read success: " << sceneData.objects.size() << " primitives" << std::endl;
-                return sceneData;
+                break;
             }
         }
-        assert(false);
+        input.close();
+        std::cout << "Read success: " << sceneData.objects.size() << " primitives" << std::endl;
+        return sceneData;
     }
 };
 
