@@ -55,6 +55,7 @@ public:
     }
 
     std::vector<Photon *> locatePhotons(const Point &testPoint, double maxDistance, size_t number) {
+
         struct HeapNode {
 
             HeapNode(double sqrDistance_, Photon *photon_) : sqrDistance(sqrDistance_), photon(photon_) { }
@@ -66,6 +67,7 @@ public:
                 return sqrDistance < other.sqrDistance;
             }
         };
+
         Point point(testPoint);
         double sqrMaxDistance = maxDistance * maxDistance;
         std::vector<HeapNode> heap;
@@ -73,20 +75,17 @@ public:
         if (node == nullptr || number == 0) {
             return std::vector<Photon *>();
         }
-        std::stack<KdNode *> stack;
-//        std::stack<double> stack2;
-        double dst = 0;
-        while (true) {
-            if (dst > sqrMaxDistance) {
-                continue;
-            }
+        std::stack<KdNode *> stackNodes;
+        std::stack<double> stackDistToPlane;
+        double estimateSqrDistance = 0;
+        bool terminate = false;
+        while (!terminate) {
             if (node->isLeaf()) {
                 // Пора считать.
                 for (GeometricShape *shape : node->getObjects()) {
                     auto photon = dynamic_cast<Photon *> (shape);
                     double sqrDistance = Vector3d(photon->getRay().getOrigin(), point).lengthSquared();
                     if (sqrDistance < sqrMaxDistance) {
-//                        std::cerr << "EEEEEE\n";
                         heap.emplace_back(sqrDistance, photon);
                         std::push_heap(heap.begin(), heap.end());
                         // Если уже набрали сколько нужно, то нужно отсекать заведомо плохие варианты.
@@ -99,36 +98,40 @@ public:
                 }
             } else {
                 double distanceToPlane = point.getAxis(node->getSplitAxis()) - node->getSplitPoint();
-//                if (distanceToPlane * distanceToPlane > maxDistance * maxDistance) {
-//                    continue;
-//                }
                 if (distanceToPlane < 0) {
                     // Сначала ищем в leftBox.
                     if (distanceToPlane * distanceToPlane < sqrMaxDistance) {
-                        stack.push(node->getRightPtr().get());
+                        stackNodes.push(node->getRightPtr().get());
+                        stackDistToPlane.push(distanceToPlane * distanceToPlane);
                     }
-//                    stack2.push(distanceToPlane * distanceToPlane);
                     node = node->getLeftPtr().get();
                     continue;
                 } else {
                     // Сначала ищем в rightBox.
                     if (distanceToPlane * distanceToPlane < sqrMaxDistance) {
-                        stack.push(node->getLeftPtr().get());
+                        stackNodes.push(node->getLeftPtr().get());
+                        stackDistToPlane.push(distanceToPlane * distanceToPlane);
                     }
-//                    stack2.push(distanceToPlane * distanceToPlane);
                     node = node->getRightPtr().get();
                     continue;
                 }
             }
 
             // Если ничего не найдено то вернуться на уровень выше.
-            if (stack.empty()) {
-                break;
-            }
-            node = stack.top();
-//            dst = stack2.top();
-            stack.pop();
-//            stack2.pop();
+            do {
+                if (stackNodes.empty()) {
+                    terminate = true;
+                    break;
+                }
+                node = stackNodes.top();
+                stackNodes.pop();
+
+                // Проверяем, есть ли еще смысл искать в сопряженном поддереве, так как рассотояние
+                // до любой точки в нем не меньше расстояния до плоскости, а значит если оно уже больше
+                // критического, то нет смысла рассматривать это поддерево.
+                estimateSqrDistance = stackDistToPlane.top();
+                stackDistToPlane.pop();
+            } while (estimateSqrDistance > sqrMaxDistance);
         }
         std::vector<Photon *> result;
         result.reserve(heap.size());
@@ -160,7 +163,7 @@ private:
             auto reflectedDirection = photon.getRay().reflectRay(obstacle->getNormal(hitPoint));
             Ray reflectedRay(hitPoint, reflectedDirection);
             reflectedRay.push();
-            Photon reflectedPhoton(reflectedRay, photon.getColor())/* * obstacle->getColorAt(hitPoint))*/;
+            Photon reflectedPhoton(reflectedRay, photon.getColor());
             tracePhoton(objects, reflectedPhoton, restDepth - 1);
         } else {
             if (randomVariable < obstacleMaterial->reflectance + obstacleMaterial->transparency) {
@@ -168,21 +171,17 @@ private:
                 auto refractionDirection = photon.getRay().refractRay(obstacle->getNormal(hitPoint),
                                                                       obstacleMaterial->refractiveIndex);
                 if (!Vector3d::isNullVector(refractionDirection)) {
-//                    std::cerr << restDepth << " ref\n";
                     Ray refractedRay(hitPoint, refractionDirection);
                     refractedRay.push();
                     Photon refractedPhoton(refractedRay, photon.getColor() * obstacle->getColorAt(hitPoint));
                     tracePhoton(objects, refractedPhoton, restDepth - 1);
                 }
             } else {
-//                if (restDepth < 3) {
                 storedPhotons.push_back(new Photon(hitPoint, photon.getDirection(), photon.getColor()));
-//                }
             }
         }
 
     }
-
 
     KdTree generalTree;
     std::vector<Photon *> storedPhotons;
