@@ -29,6 +29,19 @@ public:
                 arguments.helpFlag = true;
                 continue;
             }
+            if (argument == "--threads") {
+                if (nextArgument(current, argumentsNumber, argv, argument)) {
+                    int number = std::stoi(argument);
+                    if (number <= 0) {
+                        throw std::invalid_argument("Number of threads should be positive");
+                    } else {
+                        arguments.sceneProperties.threadNumber = (size_t) std::stoi(argument);
+                    }
+                } else {
+                    throw std::invalid_argument("Failed to read number of threads");
+                }
+                continue;
+            }
             if (argument == "--nolight") {
                 arguments.sceneProperties.enableIllumination = false;
                 continue;
@@ -102,6 +115,7 @@ public:
         << "[--help] - show this help message\n"
         << "[--sizes] <width in pixels> <height in pixels> - set target picture sizes(800x600 by default)\n"
         << "[--import] <path> - import scene using camera from the first entry (.rt and ASCII .stl are supported)\n"
+        << "[--threads] <number> - set threads number (auto by default)\n"
         << "[--nolight] - disable all illumination, and consequently any other optical effects (enabled by default)\n"
         << "[--norefl] - disable reflection (enabled by default)\n"
         << "[--norefr] - disable refraction (enabled by default)\n"

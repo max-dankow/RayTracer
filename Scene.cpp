@@ -11,13 +11,13 @@ Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
 
     SyncQueue<std::vector<Task> > taskQueue;
     std::vector<std::thread> threads;
-    for (size_t i = 0; i < THREAD_NUMBER; ++i) {
+    for (size_t i = 0; i < properties.threadNumber; ++i) {
         threads.emplace_back(&Scene::worker, this, std::ref(taskQueue));
     }
 
     std::cout << "Start rendering scene "
     << pixelNumberWidth << "x" << pixelNumberHeight
-    << " with " << THREAD_NUMBER << " threads...\n";
+    << " with " << properties.threadNumber << " threads...\n";
 
     for (size_t col = 0; col < pixelNumberWidth; ++col) {
         for (size_t row = 0; row < pixelNumberHeight; ++row) {
@@ -251,13 +251,13 @@ Picture Scene::smooth(const Picture &picture) {
 
     SyncQueue<std::vector<Task> > taskQueue;
     std::vector<std::thread> threads;
-    for (size_t i = 0; i < THREAD_NUMBER; ++i) {
+    for (size_t i = 0; i < properties.threadNumber; ++i) {
         threads.emplace_back(&Scene::worker, this, std::ref(taskQueue));
     }
 
     std::cout << "Running Adaptive AntiAliasing x"
     << properties.antiAliasingWidth * properties.antiAliasingHeight
-    << " with " << THREAD_NUMBER << " threads...\n";
+    << " with " << properties.threadNumber << " threads...\n";
 
     // Выделение ступенчатых учатсков.
     for (size_t col = 1; col < pixelNumberWidth - 1; ++col) {

@@ -92,6 +92,7 @@ struct SceneProperties {
     bool enableAntiAliasing = false;
     bool highlightAliasing = false;
     size_t photonsNumber = 5000000;
+    size_t threadNumber = std::thread::hardware_concurrency();
     size_t antiAliasingWidth = 4, antiAliasingHeight = 4;
 };
 
@@ -174,8 +175,6 @@ private:
     Picture smooth(const Picture &picture);
 
     static const int MAX_DEPTH = 10;
-    const size_t THREAD_NUMBER = std::thread::hardware_concurrency();
-
     SceneProperties properties;
 
     Camera camera;
