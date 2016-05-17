@@ -1,5 +1,4 @@
 #include <iostream>
-#include "Painter/CairoPainter.h"
 #include "Scene.h"
 #include "SceneReader/TextSTLReader.h"
 #include "SceneReader/RTReader.h"
