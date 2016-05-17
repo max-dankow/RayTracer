@@ -34,7 +34,6 @@ public:
             std::cout << "Photon Map has been built, no lights\n";
             return;
         }
-        tracePhoton(kdTree, Photon(Point(0, 0, 30), Vector3d(0, 0, -1), CL_WHITE), 3);
         // Генерация и трассировка фотонов.
         for (LightSource *light : lights) {
             long photonsPerThisLight = long(light->getBrightness() * photonNumber / totalPower);

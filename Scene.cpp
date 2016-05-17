@@ -86,19 +86,21 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
     return finalColor;
 }
 
-Color Scene::computeIndirectIllumination(Object3d *object, const Point &point) {
+Color Scene::computeIndirectIllumination(Object3d *object, const Point &point, const Ray &viewRay) {
     auto normal = object->getNormal(point);
     auto KNN = photonMap.locatePhotons(point, 1, 500);
     if (KNN.empty()) {
         return CL_BLACK;
     }
     double r = 0, g = 0, b = 0;
+    double viewRayCos = Vector3d::dotProduct(normal, viewRay.getDirection());
     for (Photon *photon : KNN) {
-        double k = -Vector3d::dotProduct(normal, photon->getRay().getDirection().normalize());
-        if (k > 0) {
-            r += photon->getColor().r * k;
-            g += photon->getColor().g * k;
-            b += photon->getColor().b * k;
+        double photonCos = Vector3d::dotProduct(normal, photon->getRay().getDirection().normalize());
+        if (photonCos * viewRayCos > 0) {
+            photonCos = std::abs(photonCos);
+            r += photon->getColor().r * photonCos;
+            g += photon->getColor().g * photonCos;
+            b += photon->getColor().b * photonCos;
         }
     }
     double gatheringRadiusSqr = Vector3d(KNN.front()->getRay().getOrigin(), point).lengthSquared();
@@ -146,7 +148,7 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
     }
 
     if (properties.enableIndirectIllumination) {
-        total = total + computeIndirectIllumination(object, point);
+        total = total + computeIndirectIllumination(object, point, viewRay);
     }
 
     return object->getColorAt(point) * total;

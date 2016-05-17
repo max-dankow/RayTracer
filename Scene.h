@@ -149,7 +149,7 @@ private:
 
     Color computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
 
-    Color computeIndirectIllumination(Object3d *object, const Point &point);
+    Color computeIndirectIllumination(Object3d *object, const Point &point, const Ray &viewRay);
 
     Color mixColors(const std::vector<Color> &neighbors) const {
         double r = 0, g = 0, b = 0;
