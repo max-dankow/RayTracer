@@ -88,6 +88,10 @@ public:
                 }
                 continue;
             }
+            if (argument == "--hlaliasing") {
+                arguments.sceneProperties.highlightAliasing = true;
+                continue;
+            }
             std::cerr << "[Warning] Unknown argument '" << argument << "'\n";
         }
         return arguments;
@@ -104,7 +108,8 @@ public:
         << "[--complexlight] - enable complex illumination\n"
         << "[--photons] <number> - set photons number (5000000 photons by default)\n"
         << "[--adaptiveaa] - enable adaptive anti aliasing (x16 by default)\n"
-        << "[--aascales] <width pixels> <height pixels> - set pixel subdivision(x16 (by default) means 4 * 4)\n";
+        << "[--aascales] <width pixels> <height pixels> - set pixel subdivision(x16 (by default) means 4 * 4)\n"
+        << "[--hlaliasing] - highlight aliasing with red color\n";
     }
 
 private:

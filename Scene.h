@@ -50,8 +50,9 @@ struct SceneData {
         return *this;
     }
 
-    SceneData& operator=(const SceneData&) = delete;
-    SceneData(const SceneData&) = delete;
+    SceneData &operator=(const SceneData &) = delete;
+
+    SceneData(const SceneData &) = delete;
 
     void merge(SceneData &&other) {
         std::move(other.objects.begin(), other.objects.end(), std::back_inserter(this->objects));
@@ -89,6 +90,7 @@ struct SceneProperties {
     bool enableRefraction = true;
     bool enableIndirectIllumination = false;
     bool enableAntiAliasing = false;
+    bool highlightAliasing = false;
     size_t photonsNumber = 5000000;
     size_t antiAliasingWidth = 4, antiAliasingHeight = 4;
 };
@@ -147,26 +149,7 @@ private:
 
     Color computeRefractionColor(Object3d *object, const Point &point, const Ray &viewRay, int restDepth);
 
-    Color computeIndirectIllumination(Object3d *object, const Point &point) {
-        auto normal = object->getNormal(point);
-        auto KNN = photonMap.locatePhotons(point, 1, 500);
-        if (KNN.empty()) {
-            return CL_BLACK;
-        }
-        double r = 0, g = 0, b = 0;
-        for (Photon *photon : KNN) {
-            double k = -Vector3d::dotProduct(normal, photon->getRay().getDirection().normalize());
-            if (k > 0) {
-                r += photon->getColor().r * k;
-                g += photon->getColor().g * k;
-                b += photon->getColor().b * k;
-            }
-        }
-//        std::cerr << r << ' ' << g << ' ' << b << ' ' << KNN.size() << '\n';
-        double gatheringRadiusSqr = Vector3d(KNN.front()->getRay().getOrigin(), point).lengthSquared();
-        double sphereArea = M_PI * gatheringRadiusSqr;
-        return Color(r / sphereArea, g / sphereArea, b / sphereArea);
-    }
+    Color computeIndirectIllumination(Object3d *object, const Point &point);
 
     Color mixColors(const std::vector<Color> &neighbors) const {
         double r = 0, g = 0, b = 0;
@@ -183,39 +166,10 @@ private:
 
     void worker(SyncQueue<std::vector<Task> > &tasks);
 
-    bool isColorPreciseEnough(const std::vector<Color> &neighbors, Color &mixedColor) const {
-        const double COLOR_PRECISION = 0.05;
-        mixedColor = mixColors(neighbors);
-
-        for (Color color : neighbors) {
-            double distance = (mixedColor.r - color.r) * (mixedColor.r - color.r)
-                              + (mixedColor.g - color.g) * (mixedColor.g - color.g)
-                              + (mixedColor.b - color.b) * (mixedColor.b - color.b);
-            if (distance > COLOR_PRECISION * COLOR_PRECISION) {
-                return false;
-            }
-        }
-        return true;
-    }
+    bool isColorPreciseEnough(const std::vector<Color> &neighbors, Color &mixedColor) const;
 
     Color mixSubPixels(const Point &topLeft, const Vector3d &colVector, const Vector3d &rowVector,
-                       size_t pixelNumberWidth, size_t pixelNumberHeight) {
-        assert(pixelNumberWidth > 0 && pixelNumberHeight > 0);
-        std::vector<Color> colors;
-        auto colSubVector = colVector * (1. / pixelNumberWidth);
-        auto rowSubVector = rowVector * (1. / pixelNumberHeight);
-        colors.reserve(pixelNumberWidth * pixelNumberWidth);
-
-        for (size_t col = 0; col < pixelNumberWidth; ++col) {
-            for (size_t row = 0; row < pixelNumberHeight; ++row) {
-                // Смещаем 0.5 чтобы попасть в серединку пикселя.
-                Point pixel(colSubVector * (0.5 + col) + rowSubVector * (0.5 + row) + topLeft);
-                auto color = computeRayColor(Ray(camera.viewPoint, pixel - camera.viewPoint), MAX_DEPTH);
-                colors.push_back(color);
-            }
-        }
-        return mixColors(colors);
-    }
+                       size_t pixelNumberWidth, size_t pixelNumberHeight);
 
     Picture smooth(const Picture &picture);
 

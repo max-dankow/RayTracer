@@ -22,7 +22,7 @@ Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
     for (size_t col = 0; col < pixelNumberWidth; ++col) {
         for (size_t row = 0; row < pixelNumberHeight; ++row) {
             Point topLeft(colVector * col + rowVector * row + camera.topLeft);
-            Task task(topLeft,colVector, rowVector, 1, 1, picture.getPointerAt(col, row));
+            Task task(topLeft, colVector, rowVector, 1, 1, picture.getPointerAt(col, row));
             taskQueue.push(task);
         }
     }
@@ -31,7 +31,7 @@ Picture Scene::render(size_t pixelNumberWidth, size_t pixelNumberHeight) {
         thread.join();
     }
 
-    if (properties.enableAntiAliasing) {
+    if (properties.enableAntiAliasing || properties.highlightAliasing) {
         picture = smooth(picture);
     }
 
@@ -84,6 +84,26 @@ const Color Scene::computeRayColor(const Ray &ray, int restDepth) {
     }
 
     return finalColor;
+}
+
+Color Scene::computeIndirectIllumination(Object3d *object, const Point &point) {
+    auto normal = object->getNormal(point);
+    auto KNN = photonMap.locatePhotons(point, 1, 500);
+    if (KNN.empty()) {
+        return CL_BLACK;
+    }
+    double r = 0, g = 0, b = 0;
+    for (Photon *photon : KNN) {
+        double k = -Vector3d::dotProduct(normal, photon->getRay().getDirection().normalize());
+        if (k > 0) {
+            r += photon->getColor().r * k;
+            g += photon->getColor().g * k;
+            b += photon->getColor().b * k;
+        }
+    }
+    double gatheringRadiusSqr = Vector3d(KNN.front()->getRay().getOrigin(), point).lengthSquared();
+    double sphereArea = M_PI * gatheringRadiusSqr;
+    return Color(r / sphereArea, g / sphereArea, b / sphereArea);
 }
 
 Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray &viewRay) {
@@ -165,6 +185,40 @@ Color Scene::computeRefractionColor(Object3d *object, const Point &point, const 
     return CL_BLACK;
 }
 
+Color Scene::mixSubPixels(const Point &topLeft, const Vector3d &colVector, const Vector3d &rowVector,
+                          size_t pixelNumberWidth, size_t pixelNumberHeight) {
+    assert(pixelNumberWidth > 0 && pixelNumberHeight > 0);
+    std::vector<Color> colors;
+    auto colSubVector = colVector * (1. / pixelNumberWidth);
+    auto rowSubVector = rowVector * (1. / pixelNumberHeight);
+    colors.reserve(pixelNumberWidth * pixelNumberWidth);
+
+    for (size_t col = 0; col < pixelNumberWidth; ++col) {
+        for (size_t row = 0; row < pixelNumberHeight; ++row) {
+            // Смещаем 0.5 чтобы попасть в серединку пикселя.
+            Point pixel(colSubVector * (0.5 + col) + rowSubVector * (0.5 + row) + topLeft);
+            auto color = computeRayColor(Ray(camera.viewPoint, pixel - camera.viewPoint), MAX_DEPTH);
+            colors.push_back(color);
+        }
+    }
+    return mixColors(colors);
+}
+
+bool Scene::isColorPreciseEnough(const std::vector<Color> &neighbors, Color &mixedColor) const {
+    const double COLOR_PRECISION = 0.05;
+    mixedColor = mixColors(neighbors);
+
+    for (Color color : neighbors) {
+        double distance = (mixedColor.r - color.r) * (mixedColor.r - color.r)
+                          + (mixedColor.g - color.g) * (mixedColor.g - color.g)
+                          + (mixedColor.b - color.b) * (mixedColor.b - color.b);
+        if (distance > COLOR_PRECISION * COLOR_PRECISION) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void Scene::worker(SyncQueue<std::vector<Task> > &tasks) {
     while (true) {
         Task result;
@@ -212,13 +266,16 @@ Picture Scene::smooth(const Picture &picture) {
                                        picture.getAt(col, row + 1),
                                        picture.getAt(col - 1, row),
                                        picture.getAt(col, row - 1)}, ignoreColor)) {
-                Point topLeft(colVector * col + rowVector * row + camera.topLeft);
-                Task task(topLeft, colVector, rowVector,
-                          (unsigned char) properties.antiAliasingWidth,
-                          (unsigned char) properties.antiAliasingHeight,
-                          smoothed.getPointerAt(col, row));
-                taskQueue.push(task);
-//                smoothed.setAt(col, row, CL_RED);//todo: use it to minimize color_precise parameter
+                if (properties.highlightAliasing) {
+                    smoothed.setAt(col, row, CL_RED);
+                } else {
+                    Point topLeft(colVector * col + rowVector * row + camera.topLeft);
+                    Task task(topLeft, colVector, rowVector,
+                              (unsigned char) properties.antiAliasingWidth,
+                              (unsigned char) properties.antiAliasingHeight,
+                              smoothed.getPointerAt(col, row));
+                    taskQueue.push(task);
+                }
             } else {
                 smoothed.setAt(col, row, picture.getAt(col, row));
             }
