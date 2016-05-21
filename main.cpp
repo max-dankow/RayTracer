@@ -71,15 +71,8 @@ SceneData readFiles(const std::vector<std::string> &paths) {
     return sceneData;
 }
 
-// todo : перейти на float
-int main(int argc, char *argv[]) {
-    Arguments arguments = ArgumentsReader::readArguments(argc, argv);
-//    ArgumentsReader::printHelp(std::cout);
-    if (arguments.helpFlag) {
-        return 0;
-    }
-    printSizes();
-    SceneData sceneData = readFiles(arguments.files);
+void doRender(const Arguments &arguments, std::vector<std::string> files) {
+    SceneData sceneData = readFiles(files);
 
     Scene scene(std::move(sceneData), arguments.sceneProperties);
     auto picture = scene.render(arguments.pictureWidth, arguments.pictureHeight);
@@ -88,5 +81,25 @@ int main(int argc, char *argv[]) {
 //    cairoPainter.showPicture(picture);
     PNGPainter painter(arguments.pictureWidth, arguments.pictureHeight, createFileName("./results/", ".png"));
     painter.showPicture(picture);
+}
+
+// todo : перейти на float
+int main(int argc, char *argv[]) {
+    Arguments arguments = ArgumentsReader::readArguments(argc, argv);
+//    ArgumentsReader::printHelp(std::cout);
+    if (arguments.helpFlag) {
+        return 0;
+    }
+    printSizes();
+    if (!arguments.files.empty()) {
+        doRender(arguments, arguments.files);
+        return 0;
+    }
+    std::cout << "Enter file path to render\n";
+    std::string path;
+    while (std::cin >> path) {
+        doRender(arguments, {path});
+        std::cout << "Enter file path to render\n";
+    }
     return 0;
 }
