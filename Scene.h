@@ -25,28 +25,33 @@ struct Camera {
 static Camera DEFAULT_CAMERA(Point(0, 0, 12), Point(-2, 1.5, 10), Point(-2, -1.5, 10), Point(2, 1.5, 10));
 
 struct SceneData {
-    SceneData() : camera(DEFAULT_CAMERA) { }
+    SceneData() : camera(DEFAULT_CAMERA), power(100), distance(10) { }
 
     SceneData(const Camera &camera,
               std::vector<Object3d *> &&objects,
               std::vector<LightSource *> &&lights,
-              std::vector<Material *> &&materials) :
+              std::vector<Material *> &&materials,
+              double power, double distance) :
             camera(camera),
             objects(std::move(objects)),
             lights(std::move(lights)),
-            materials(std::move(materials)) { }
+            materials(std::move(materials)),
+            power(power), distance(distance) { }
 
     SceneData(SceneData &&other) :
             camera(other.camera),
             objects(std::move(other.objects)),
             lights(std::move(other.lights)),
-            materials(std::move(other.materials)) { }
+            materials(std::move(other.materials)),
+            power(other.power), distance(other.distance) { }
 
     SceneData &operator=(SceneData &&other) {
         this->camera = other.camera;
         this->objects = std::move(other.objects);
         this->lights = std::move(other.lights);
         this->materials = std::move(other.materials);
+        this->power = other.power;
+        this->distance = other.distance;
         return *this;
     }
 
@@ -82,6 +87,10 @@ struct SceneData {
     std::vector<Object3d *> objects;
     std::vector<LightSource *> lights;
     std::vector<Material *> materials;
+    // Данные для нормировки света. Источник света заданной мощности обеспечивает такую
+    // освещенность ближайшей точки плоскости на заданном расстоянии,
+    // что её цвет, отображаемый на экране, в точности соответствует цвету материала.
+    double power, distance;
 };
 
 struct SceneProperties {
@@ -122,7 +131,9 @@ public:
             properties(properties),
             camera(sceneData.camera),
             objectList(std::move(sceneData.objects)),
-            lights(std::move(sceneData.lights)) {
+            lights(std::move(sceneData.lights)),
+            power(sceneData.power),
+            distance(sceneData.distance) {
         this->objects = KdTree(std::vector<GeometricShape *>(objectList.begin(), objectList.end()));
         if (properties.enableIndirectIllumination) {
             this->photonMap = PhotonMap(this->lights, this->objects, properties.photonsNumber);
@@ -180,6 +191,8 @@ private:
     Camera camera;
     Color backgroundColor = CL_BLACK;
     double backgroundIllumination = 0;
+    // Нормировка света.
+    double power, distance;
 
     // Kd дерево указателей на все объекты сцены, хранимые в куче.
     KdTree objects;

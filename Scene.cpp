@@ -141,9 +141,11 @@ Color Scene::computeDiffuseColor(Object3d *object, const Point &point, const Ray
                 fong = std::pow(fongCos, material->phongPower);
             }
             double brightness = dotNormalLight;
-            total = total + light->getColor()
-                            * ((brightness * material->lambert + fong * material->phong) * light->getBrightness()
-                               / sqrDistanceToLight);
+            double lightPower = ((brightness * material->lambert + fong * material->phong)
+                                 * light->getBrightness()
+                                 * distance * distance / power
+                                 / sqrDistanceToLight);
+            total = total + light->getColor() * lightPower;
         }
     }
 

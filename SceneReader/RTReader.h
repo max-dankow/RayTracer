@@ -54,8 +54,26 @@ public:
                         sceneData.addLightSource(readPointLight(input));
                         continue;
                     }
-                    // todo: power normalization
-                    showWarning(entry);
+                    if (entry == "reference") {
+                        string property;
+                        Point center;
+                        double power = 0;
+                        Color color = CL_WHITE;
+                        while (getNextWord(input, property)) {
+                            if (property == "endreference") {
+                                break;
+                            }
+                            if (property == "distance") {
+                                input >> sceneData.distance;
+                                continue;
+                            }
+                            if (property == "power") {
+                                input >> sceneData.power;
+                                continue;
+                            }
+                            showWarning(property);
+                        }
+                    }
                 }
 
                 continue;
@@ -189,7 +207,7 @@ Material *RTReader::readMaterials(std::ifstream &input, std::map<string, const M
     Color color = CL_WHITE;
     double reflectance = 0;
     double refractiveIndex = 1;
-    double transparency = 0;
+    double alpha = 1;
     while (getNextWord(input, property)) {
         if (property == "endentry") {
             break;
@@ -211,12 +229,12 @@ Material *RTReader::readMaterials(std::ifstream &input, std::map<string, const M
             continue;
         }
         if (property == "alpha") {
-            input >> transparency;
+            input >> alpha;
             continue;
         }
         showWarning(property);
     }
-    Material *newMaterial = new Material(color, reflectance, refractiveIndex, transparency);
+    Material *newMaterial = new Material(color, reflectance, refractiveIndex, 1. - alpha);
     materials.insert({name, newMaterial});
     return newMaterial;
 }
