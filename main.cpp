@@ -85,12 +85,13 @@ void doRender(const Arguments &arguments, std::vector<std::string> files) {
 
 // todo : перейти на float
 int main(int argc, char *argv[]) {
+    std::ios_base::sync_with_stdio(false);
     Arguments arguments = ArgumentsReader::readArguments(argc, argv);
 //    ArgumentsReader::printHelp(std::cout);
     if (arguments.helpFlag) {
         return 0;
     }
-    printSizes();
+//    printSizes();
     if (!arguments.files.empty()) {
         doRender(arguments, arguments.files);
         return 0;

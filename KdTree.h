@@ -151,9 +151,9 @@ private:
                                       const std::vector<GeometricShape *> &objectList,
                                       Point &intersection) const;
 
-    const SplitMethod splitMethod = SPLIT_ADAPTIVE;
+    const SplitMethod splitMethod = SPLIT_BY_GRID_FAST;
     static const size_t REGULAR_GRID_COUNT = 32;
-    const double COST_EMPTY = 0.1;
+    const double COST_EMPTY = 100;
     size_t nodeCount;
     unique_ptr<KdNode> root;
 };
